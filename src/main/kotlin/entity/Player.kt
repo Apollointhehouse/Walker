@@ -1,7 +1,6 @@
 package dev.apollointhehouse.walker.entity
 
 import dev.apollointhehouse.walker.input.PlayerInputHandler
-import dev.apollointhehouse.walker.render.Renderer
 import dev.apollointhehouse.walker.utils.MathHelper
 import org.apache.logging.log4j.kotlin.logger
 import org.lwjgl.opengl.GL11
@@ -19,13 +18,9 @@ class Player : Entity {
     override var dxo: Double = 0.0
     override var dyo: Double = 0.0
 
-    private val speed = 1/20.0
+    private val speed = 5.0
 
     private val input = PlayerInputHandler()
-
-    init {
-        Renderer.addDrawable(this)
-    }
 
     override fun tick() {
         xo = x
@@ -42,6 +37,7 @@ class Player : Entity {
         dy += input.forward * speed
 
         logger.info("dx: %.2f, dy: %.2f".format(dx, dy))
+        logger.info("x: %.2f, y: %.2f".format(x, y))
 
         x += dx
         y += dy
@@ -60,9 +56,5 @@ class Player : Entity {
 
         GL11.glVertex2d(lerpX, lerpY)
         GL11.glEnd()
-    }
-
-    companion object {
-        val logger = logger()
     }
 }

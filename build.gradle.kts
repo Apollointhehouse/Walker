@@ -64,6 +64,10 @@ kotlin {
             kotlin.setSrcDirs(listOf("src/main/kotlin"))
         }
     }
+
+    compilerOptions {
+        freeCompilerArgs.add("-Xcollection-literals")
+    }
 }
 
 application {

@@ -2,18 +2,15 @@ package dev.apollointhehouse.walker.render
 
 import dev.apollointhehouse.walker.Game
 import dev.apollointhehouse.walker.input.Input
-import dev.apollointhehouse.walker.render.shader.Shaders
-import org.lwjgl.BufferUtils
 import org.lwjgl.glfw.Callbacks.glfwFreeCallbacks
 import org.lwjgl.glfw.GLFW.*
 import org.lwjgl.glfw.GLFWErrorCallback
 import org.lwjgl.glfw.GLFWVidMode
 import org.lwjgl.opengl.GL
 import org.lwjgl.opengl.GL11.*
-import org.lwjgl.opengl.GL41.*
+import org.lwjgl.opengl.GL41.glBindVertexArray
 import org.lwjgl.system.MemoryStack.stackPush
 import org.lwjgl.system.MemoryUtil.NULL
-import java.nio.FloatBuffer
 import java.nio.IntBuffer
 
 class Renderer(val game: Game) {
@@ -59,33 +56,26 @@ class Renderer(val game: Game) {
         glfwMakeContextCurrent(window)
         GL.createCapabilities()
 
+        stackPush().use { stack ->
+            val fbWidth = stack.mallocInt(1)
+            val fbHeight = stack.mallocInt(1)
+            glfwGetFramebufferSize(window, fbWidth, fbHeight)
+            glViewport(0, 0, fbWidth.get(0), fbHeight.get(0))
+        }
+
+        glfwSetFramebufferSizeCallback(window) { _, width, height ->
+            glViewport(0, 0, width, height)
+        }
+
         // Enable v-sync
         glfwSwapInterval(1)
 
-        Shaders.init()
-
-        vao = glGenVertexArrays()
-        glBindVertexArray(vao)
-
-        vbo = glGenBuffers()
-        glBindBuffer(GL_ARRAY_BUFFER, vbo)
-
-        val vertices = floatArrayOf(
-            100f, 100f,
-            400f, 100f,
-            400f, 400f,
-            100f, 400f
-        )
-        val buffer: FloatBuffer = BufferUtils.createFloatBuffer(vertices.size)
-        buffer.put(vertices)
-        buffer.flip()
-
-        glBufferData(GL_ARRAY_BUFFER, buffer, GL_STATIC_DRAW)
-        glVertexAttribPointer(0, 2, GL_FLOAT, false, 0, 0)
-        glEnableVertexAttribArray(0)
-
-        glBindBuffer(GL_ARRAY_BUFFER, 0)
-        glBindVertexArray(0)
+        glMatrixMode(GL_PROJECTION)
+        glLoadIdentity()
+        glClearColor(0.3f, 0.3f, 0.3f, 0.0f)
+        glOrtho(0.0, 1024.0, 0.0, 512.0, -1.0, 1.0)
+        glMatrixMode(GL_MODELVIEW)
+        glLoadIdentity()
 
         // Make the window visible
         glfwShowWindow(window)
