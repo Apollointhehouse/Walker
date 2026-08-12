@@ -4,6 +4,7 @@ repositories {
 
 plugins {
     kotlin("jvm") version "2.4.0"
+    application
 }
 group = "dev.apollointhehouse"
 version = "1.0-SNAPSHOT"
@@ -51,6 +52,14 @@ dependencies {
 
 kotlin {
     jvmToolchain(25)
+    jvmToolchain {
+
+    }
+}
+
+application {
+    mainClass.set("dev.apollointhehouse.MainKt")
+    applicationDefaultJvmArgs = listOf("--add-opens=java.base/sun.misc=ALL-UNNAMED", "--enable-native-access=ALL-UNNAMED")
 }
 
 tasks.test {
