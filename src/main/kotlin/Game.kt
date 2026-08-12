@@ -8,7 +8,7 @@ import org.lwjgl.glfw.GLFW.glfwTerminate
 
 class Game : Tickable {
     val level = Level()
-    val player = Player()
+    val player = Player(level)
 
     fun run() {
         Renderer.addDrawable(level)

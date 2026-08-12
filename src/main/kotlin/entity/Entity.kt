@@ -15,4 +15,6 @@ interface Entity : Drawable, Tickable {
 
     val dxo: Double
     val dyo: Double
+
+    val angle: Double
 }
