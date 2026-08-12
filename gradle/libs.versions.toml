@@ -1,0 +1,16 @@
+[versions]
+lwjglVersion = "3.4.2"
+jomlVersion = "1.10.9"
+
+[libraries]
+lwjgl = { group = "org.lwjgl", name = "lwjgl", version.ref = "lwjglVersion" }
+lwjgl-assimp = { group = "org.lwjgl", name = "lwjgl-assimp", version.ref = "lwjglVersion" }
+lwjgl-glfw = { group = "org.lwjgl", name = "lwjgl-glfw", version.ref = "lwjglVersion" }
+lwjgl-openal = { group = "org.lwjgl", name = "lwjgl-openal", version.ref = "lwjglVersion" }
+lwjgl-opengl = { group = "org.lwjgl", name = "lwjgl-opengl", version.ref = "lwjglVersion" }
+lwjgl-stb = { group = "org.lwjgl", name = "lwjgl-stb", version.ref = "lwjglVersion" }
+
+joml = { group = "org.joml", name = "joml", version.ref = "jomlVersion" }
+
+[bundles]
+lwjgl = ["lwjgl", "lwjgl-assimp", "lwjgl-glfw", "lwjgl-openal", "lwjgl-opengl", "lwjgl-stb"]
