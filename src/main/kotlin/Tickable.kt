@@ -1,5 +1,5 @@
 package dev.apollointhehouse.walker
 
-fun main() {
-    Game().run()
+interface Tickable {
+    fun tick()
 }

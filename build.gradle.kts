@@ -6,7 +6,7 @@ plugins {
     kotlin("jvm") version "2.4.0"
     application
 }
-group = "dev.apollointhehouse"
+group = "dev.apollointhehouse.walker"
 version = "1.0-SNAPSHOT"
 
 val lwjglNatives = Pair(
@@ -36,29 +36,38 @@ repositories {
 }
 
 dependencies {
+    // logging
+    implementation(libs.bundles.log4j)
+    runtimeOnly(libs.jackson.databind)
+
+    // LWJGL
     implementation(platform("org.lwjgl:lwjgl-bom:${libs.versions.lwjglVersion.get()}"))
     implementation(libs.bundles.lwjgl)
     implementation(libs.joml)
-
     implementation("org.lwjgl:lwjgl::$lwjglNatives")
     implementation("org.lwjgl:lwjgl-assimp::$lwjglNatives")
     implementation("org.lwjgl:lwjgl-glfw::$lwjglNatives")
     implementation("org.lwjgl:lwjgl-openal::$lwjglNatives")
     implementation("org.lwjgl:lwjgl-opengl::$lwjglNatives")
     implementation("org.lwjgl:lwjgl-stb::$lwjglNatives")
+    implementation("org.lwjgl:lwjgl-sdl::$lwjglNatives")
 
     testImplementation(kotlin("test"))
+    implementation(kotlin("reflect"))
 }
 
 kotlin {
     jvmToolchain(25)
-    jvmToolchain {
 
+    sourceSets {
+        main {
+            kotlin.setSrcDirs(listOf("src/main/kotlin"))
+        }
     }
 }
 
 application {
-    mainClass.set("dev.apollointhehouse.MainKt")
+    mainClass.set("dev.apollointhehouse.walker.MainKt")
     applicationDefaultJvmArgs = listOf("--add-opens=java.base/sun.misc=ALL-UNNAMED", "--enable-native-access=ALL-UNNAMED")
 }
 
