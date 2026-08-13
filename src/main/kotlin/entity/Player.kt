@@ -2,14 +2,12 @@ package dev.apollointhehouse.walker.entity
 
 import dev.apollointhehouse.walker.input.PlayerInputHandler
 import dev.apollointhehouse.walker.level.Level
-import dev.apollointhehouse.walker.utils.math.HitResult
-import dev.apollointhehouse.walker.utils.math.angleRange
-import dev.apollointhehouse.walker.utils.math.deltaAngle
-import dev.apollointhehouse.walker.utils.math.lerpAngle
-import dev.apollointhehouse.walker.utils.math.raycast
+import dev.apollointhehouse.walker.render.Renderer
+import dev.apollointhehouse.walker.utils.math.*
 import org.apache.logging.log4j.kotlin.logger
-import org.joml.Math.lerp
 import org.joml.Vector2d
+import org.joml.plus
+import org.joml.times
 import org.lwjgl.opengl.GL11.*
 import kotlin.math.cos
 import kotlin.math.min
@@ -20,6 +18,8 @@ class Player(
     private val position: Vector2d = Vector2d(300.0, 300.0)
 ) : Entity {
     private val oldPosition = Vector2d(position)
+    private val velocity = Vector2d()
+    private val oldVelocity = Vector2d(velocity)
 
     override var x: Double
         get() = position.x()
@@ -35,15 +35,19 @@ class Player(
         get() = oldPosition.y()
         private set(value) { oldPosition.set(xo, value) }
 
-    override var dx: Double = 0.0
-        private set
-    override var dy: Double = 0.0
-        private set
+    override var dx: Double
+        get() = velocity.x()
+        private set(value) { velocity.set(value, dy) }
+    override var dy: Double
+        get() = velocity.y()
+        private set(value) { velocity.set(dx, value) }
 
-    override var dxo: Double = dx
-        private set
-    override var dyo: Double = dy
-        private set
+    override var dxo: Double
+        get() = oldVelocity.x()
+        private set(value) { oldVelocity.set(value, dyo) }
+    override var dyo: Double
+        get() = oldVelocity.y()
+        private set(value) { oldVelocity.set(dxo, value) }
 
     override var angle: Double = 2 * Math.PI
         private set
@@ -99,7 +103,8 @@ class Player(
 
     private fun drawRays(count: Int, precision: Double, deltaTime: Double) {
         for (r in 0..<count) {
-            val rawAngle = lerpAngle(angleO, angle, deltaTime) - (r - count / 2.0 + 0.5) * precision
+            val lerpAngle = lerpAngle(angleO, angle, deltaTime)
+            val rawAngle = lerpAngle - (r - count / 2.0 + 0.5) * precision
             val rayAngle = ((rawAngle % Math.TAU) + Math.TAU) % Math.TAU
 
             val hitResult = raycast(oldPosition.lerp(position, deltaTime, Vector2d()), level, rayAngle)
@@ -113,12 +118,13 @@ class Player(
             }
 
             glLineWidth(1.0f)
-            glBegin(GL_LINES)
-            glVertex2d(x, y)
-            glVertex2d(pos.x, pos.y)
-            glEnd()
 
-            val deltaAngle = deltaAngle(angle, rayAngle)
+            Renderer.draw(GL_LINES) {
+                glVertex2d(x, y)
+                glVertex2d(pos.x, pos.y)
+            }
+
+            val deltaAngle = deltaAngle(lerpAngle, rayAngle)
 
             dist *= cos(deltaAngle)
 
@@ -130,37 +136,36 @@ class Player(
             val viewStartX = 530.0
             val colWidth = (screenWidth - viewStartX) / count
 
-            glBegin(GL_QUADS)
             val xLeft = (viewStartX + r * colWidth).toFloat()
             val xRight = (viewStartX + (r + 1) * colWidth).toFloat()
-            glVertex2f(xLeft, lineOffset)
-            glVertex2f(xRight, lineOffset)
-            glVertex2f(xRight, lineHeight.toFloat() + lineOffset)
-            glVertex2f(xLeft, lineHeight.toFloat() + lineOffset)
-            glEnd()
+
+            Renderer.draw(GL_QUADS) {
+                glVertex2f(xLeft, lineOffset)
+                glVertex2f(xRight, lineOffset)
+                glVertex2f(xRight, lineHeight.toFloat() + lineOffset)
+                glVertex2f(xLeft, lineHeight.toFloat() + lineOffset)
+            }
         }
     }
 
     override fun render(deltaTime: Double) {
-        glColor3f(1.0f, 1.0f, 0.0f)
         glPointSize(8f)
-        glBegin(GL_POINTS)
+        glColor3f(1.0f, 1.0f, 0.0f)
+        val lerpPos = oldPosition.lerp(position, deltaTime, Vector2d())
 
-        val lerpX = lerp(xo, x, deltaTime)
-        val lerpY = lerp(yo, y, deltaTime)
+        Renderer.draw(GL_POINTS) {
+            Renderer.addVertex(lerpPos)
+        }
 
-        glVertex2d(lerpX, lerpY)
-        glEnd()
-
-        val lerpDX = lerp(dxo, dx, deltaTime)
-        val lerpDY = lerp(dyo, dy, deltaTime)
+        val lerpVel = oldVelocity.lerp(velocity, deltaTime, Vector2d())
 
         glColor3f(1.0f, 0.0f, 0.0f)
         glLineWidth(2f)
-        glBegin(GL_LINES)
-        glVertex2d(x, y)
-        glVertex2d(x + lerpDX * SPEED, y + lerpDY * SPEED)
-        glEnd()
+
+        Renderer.draw(GL_LINES) {
+            Renderer.addVertex(position)
+            Renderer.addVertex(position + lerpVel * SPEED)
+        }
 
         drawRays((FOV / PRECISION).toInt(), Math.toRadians(PRECISION), deltaTime)
     }

@@ -1,7 +1,7 @@
 package dev.apollointhehouse.walker.render
 
-import dev.apollointhehouse.walker.Game
 import dev.apollointhehouse.walker.input.Input
+import org.joml.Vector2d
 import org.lwjgl.glfw.Callbacks.glfwFreeCallbacks
 import org.lwjgl.glfw.GLFW.*
 import org.lwjgl.glfw.GLFWErrorCallback
@@ -13,11 +13,14 @@ import org.lwjgl.system.MemoryStack.stackPush
 import org.lwjgl.system.MemoryUtil.NULL
 import java.nio.IntBuffer
 
-class Renderer(val game: Game) {
-    private var window: Long = 0
+object Renderer {
+    private val drawables = mutableListOf<Drawable>()
+
+    var window: Long = 0
+        private set
+
     private var vao: Int = 0
     private var vbo: Int = 0
-
     fun init() {
         GLFWErrorCallback.createPrint(System.err).set()
 
@@ -81,31 +84,13 @@ class Renderer(val game: Game) {
         glfwShowWindow(window)
     }
 
-    fun loop() {
-        var lastTime = System.nanoTime()
-        val nsPerTick = 1000000000.0 / 20.0
-        var delta = 0.0
-
-        // Render loop
-        while (!glfwWindowShouldClose(window)) {
-            val now = System.nanoTime()
-            delta += (now - lastTime) / nsPerTick
-            lastTime = now
-
-            while (delta >= 1.0) {
-                game.tick()
-                delta--
-            }
-
-            render(delta)
-        }
-
+    fun cleanup() {
         // Free the window callbacks and destroy the window
         glfwFreeCallbacks(window)
         glfwDestroyWindow(window)
     }
 
-    private fun render(deltaTime: Double) {
+    fun render(deltaTime: Double) {
         glClearColor(0.3f, 0.3f, 0.3f, 0.0f)
         glClear(GL_COLOR_BUFFER_BIT or GL_DEPTH_BUFFER_BIT)
 
@@ -127,9 +112,15 @@ class Renderer(val game: Game) {
         glfwPollEvents()
     }
 
-    companion object {
-        private val drawables = mutableListOf<Drawable>()
+    fun addDrawable(drawable: Drawable): Boolean = drawables.add(drawable)
+    fun addVertex(vert: Vector2d) = glVertex2d(vert.x, vert.y)
 
-        fun addDrawable(drawable: Drawable): Boolean = drawables.add(drawable)
+    fun begin(glMode: Int) = glBegin(glMode)
+    fun end() = glEnd()
+
+    inline fun draw(glMode: Int, block: () -> Unit) {
+        begin(glMode)
+        block()
+        end()
     }
 }
