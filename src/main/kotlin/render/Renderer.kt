@@ -114,6 +114,7 @@ object Renderer {
 
     fun addDrawable(drawable: Drawable): Boolean = drawables.add(drawable)
     fun addVertex(vert: Vector2d) = glVertex2d(vert.x, vert.y)
+    fun addVertex(x: Double, y: Double) = glVertex2d(x, y)
 
     fun begin(glMode: Int) = glBegin(glMode)
     fun end() = glEnd()

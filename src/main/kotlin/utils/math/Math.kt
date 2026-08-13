@@ -19,7 +19,7 @@ fun deltaAngle(a: Double, b: Double): Double =
 fun angleRange(angle: Double, min: Double, max: Double): Double =
     ((max - min) / 2.0) * (cos(angle) - (-1.0)) + min
 
-sealed class HitResult(val pos: Vector2d, val dist: Double) {
+sealed class HitResult(val hitPos: Vector2d, val dist: Double) {
     class Horizontal(pos: Vector2d, dist: Double) : HitResult(pos, dist)
     class Vertical(pos: Vector2d, dist: Double) : HitResult(pos, dist)
 }

@@ -107,8 +107,9 @@ class Player(
             val rawAngle = lerpAngle - (r - count / 2.0 + 0.5) * precision
             val rayAngle = ((rawAngle % Math.TAU) + Math.TAU) % Math.TAU
 
-            val hitResult = raycast(oldPosition.lerp(position, deltaTime, Vector2d()), level, rayAngle)
-            (val pos, var dist) = hitResult
+            val lerpPos = oldPosition.lerp(position, deltaTime, Vector2d())
+            val hitResult = raycast(lerpPos, level, rayAngle)
+            (val hitPos, var dist) = hitResult
 
             val colorMult = angleRange(rayAngle, 0.9, 1.1)
 
@@ -120,8 +121,8 @@ class Player(
             glLineWidth(1.0f)
 
             Renderer.draw(GL_LINES) {
-                glVertex2d(x, y)
-                glVertex2d(pos.x, pos.y)
+                Renderer.addVertex(lerpPos)
+                Renderer.addVertex(hitPos)
             }
 
             val deltaAngle = deltaAngle(lerpAngle, rayAngle)
@@ -130,20 +131,20 @@ class Player(
 
             val lineHeight = min((level.mapSize * 320) / dist, 320.0)
             val viewCenterY = 256.0
-            val lineOffset = (viewCenterY - lineHeight).toFloat() / 2f
+            val lineOffset = (viewCenterY - lineHeight).toFloat() / 2.0
 
             val screenWidth = 1024.0
             val viewStartX = 530.0
             val colWidth = (screenWidth - viewStartX) / count
 
-            val xLeft = (viewStartX + r * colWidth).toFloat()
-            val xRight = (viewStartX + (r + 1) * colWidth).toFloat()
+            val xLeft = (viewStartX + r * colWidth)
+            val xRight = (viewStartX + (r + 1) * colWidth)
 
             Renderer.draw(GL_QUADS) {
-                glVertex2f(xLeft, lineOffset)
-                glVertex2f(xRight, lineOffset)
-                glVertex2f(xRight, lineHeight.toFloat() + lineOffset)
-                glVertex2f(xLeft, lineHeight.toFloat() + lineOffset)
+                Renderer.addVertex(xLeft, lineOffset)
+                Renderer.addVertex(xRight, lineOffset)
+                Renderer.addVertex(xRight, lineHeight.toFloat() + lineOffset)
+                Renderer.addVertex(xLeft, lineHeight.toFloat() + lineOffset)
             }
         }
     }
