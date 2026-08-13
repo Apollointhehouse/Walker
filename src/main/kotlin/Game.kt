@@ -1,19 +1,18 @@
 package dev.apollointhehouse.walker
 
 import dev.apollointhehouse.walker.entity.Player
+import dev.apollointhehouse.walker.level.DrawableLevel
 import dev.apollointhehouse.walker.level.JsonLevel
 import dev.apollointhehouse.walker.render.Renderer
 import org.lwjgl.glfw.GLFW.glfwSetErrorCallback
 import org.lwjgl.glfw.GLFW.glfwTerminate
 import org.lwjgl.glfw.GLFW.glfwWindowShouldClose
 
-class Game : Tickable {
-//    val level = DrawableLevel()
-    val level = JsonLevel.load("level.json") ?: error("Level not found")
-    val player = Player(level)
+object Game : Tickable {
+    val player = Player(JsonLevel.load("level.json"))
 
     fun run() {
-        Renderer.addDrawable(level)
+        Renderer.addDrawable(DrawableLevel(player))
         Renderer.addDrawable(player)
 
         try {

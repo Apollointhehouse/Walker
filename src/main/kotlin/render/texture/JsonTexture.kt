@@ -10,8 +10,6 @@ import java.io.InputStream
 
 class JsonTexture(private val model: JsonTextureModel) : Texture {
     val size get() = model.xSize*model.ySize
-    val xSize get() = model.xSize
-    val ySize get() = model.ySize
 
     override fun get(x: Int, y: Int): Int {
         val safeX = x.coerceIn(0, model.xSize - 1)

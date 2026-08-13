@@ -2,6 +2,7 @@ package dev.apollointhehouse.walker.entity
 
 import dev.apollointhehouse.walker.input.PlayerInputHandler
 import dev.apollointhehouse.walker.level.Level
+import dev.apollointhehouse.walker.render.Camera
 import dev.apollointhehouse.walker.render.Renderer
 import dev.apollointhehouse.walker.render.texture.Textures
 import dev.apollointhehouse.walker.utils.math.*
@@ -13,12 +14,12 @@ import kotlin.math.cos
 import kotlin.math.sin
 
 class Player(
-    private val level: Level,
-    private val position: Vector2d = Vector2d(300.0, 300.0)
+    val level: Level,
+    val position: Vector2d = Vector2d(300.0, 300.0)
 ) : Entity {
-    private val oldPosition = Vector2d(position)
-    private val velocity = Vector2d()
-    private val oldVelocity = Vector2d(velocity)
+    val oldPosition = Vector2d(position)
+    val velocity = Vector2d()
+    val oldVelocity = Vector2d(velocity)
 
     override var x: Double
         get() = position.x()
@@ -113,10 +114,12 @@ class Player(
 
             glLineWidth(1.0f)
 
+            Camera.begin(lerpPos)
             Renderer.draw(GL_LINES) {
                 Renderer.addVertex(lerpPos)
                 Renderer.addVertex(hitPos)
             }
+            Camera.end()
 
             val deltaAngle = deltaAngle(lerpAngle, rayAngle)
 
@@ -140,9 +143,9 @@ class Player(
             val xLeft = (viewStartX + r * colWidth)
             val xRight = (viewStartX + (r + 1) * colWidth)
 
-            val wallTexture = Textures.wall!!
+            val wallTexture = Textures.brick!!
 
-            var texY = texYStep * texYOffset
+            val texY = texYStep * texYOffset
             val texX = when (hitResult) {
                 is HitResult.Horizontal -> hitPos.x % 64 / 2.0
                 is HitResult.Vertical -> hitPos.y % 64 / 2.0
@@ -171,26 +174,27 @@ class Player(
     }
 
     override fun render(deltaTime: Double) {
+        val lerpPos = oldPosition.lerp(position, deltaTime, Vector2d())
+        val lerpVel = oldVelocity.lerp(velocity, deltaTime, Vector2d())
+
+        Camera.begin(lerpPos)
+
         glPointSize(8f)
         glColor3f(1.0f, 1.0f, 0.0f)
-        val lerpPos = oldPosition.lerp(position, deltaTime, Vector2d())
-
         Renderer.draw(GL_POINTS) {
             Renderer.addVertex(lerpPos)
         }
 
-        val lerpVel = oldVelocity.lerp(velocity, deltaTime, Vector2d())
-
         glColor3f(1.0f, 1.0f, 0.0f)
         glLineWidth(2f)
-
         Renderer.draw(GL_LINES) {
             Renderer.addVertex(lerpPos)
             Renderer.addVertex(lerpPos + lerpVel * SPEED)
         }
 
-        val rayCount = (FOV / PRECISION).toInt()
+        Camera.end()
 
+        val rayCount = (FOV / PRECISION).toInt()
         drawRays(rayCount, Math.toRadians(PRECISION), deltaTime)
     }
 

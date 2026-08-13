@@ -91,13 +91,8 @@ object Renderer {
     }
 
     fun render(deltaTime: Double) {
-        glClearColor(0.3f, 0.3f, 0.3f, 0.0f)
         glClear(GL_COLOR_BUFFER_BIT or GL_DEPTH_BUFFER_BIT)
 
-//        val orthoMatrix = Matrix4f().ortho(0f, 1024f, 512f, 0f, -1.0f, 1.0f)
-//        Shaders.BASE.bind()
-//        Shaders.BASE.uniformMat4f("uProjection", orthoMatrix)
-//        Shaders.BASE.uniformVec4f("uColor", Vector4f(1f, 0f, 0f, 0f))
 
         for (drawable in drawables) {
             drawable.render(deltaTime)

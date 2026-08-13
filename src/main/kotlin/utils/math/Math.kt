@@ -27,7 +27,7 @@ sealed class HitResult(val hitPos: Vector2d, val dist: Double) {
     class Vertical(pos: Vector2d, dist: Double) : HitResult(pos, dist)
 }
 
-fun raycast(initialPos: Vector2d, level: Level, angle: Double): HitResult {
+fun raycast(initialPos: Vector2d, level: Level, angle: Double, depth: Int = 16): HitResult {
     val (x, y) = initialPos
     val dirX = cos(angle)
     val dirY = sin(angle)
@@ -48,7 +48,7 @@ fun raycast(initialPos: Vector2d, level: Level, angle: Double): HitResult {
         rayHX = x + (rayHY - y) * (dirX / dirY)
 
         var dof = 0
-        while (dof < 16) {
+        while (dof < depth) {
             val mapX = rayHX.toInt()
             val mapY = rayHY.toInt()
             if (mapX in 0..<level.mapX * level.size && mapY in 0..<level.mapY * level.size && level.get(mapX, mapY) == 1) break
@@ -73,7 +73,7 @@ fun raycast(initialPos: Vector2d, level: Level, angle: Double): HitResult {
         rayVY = y + (rayVX - x) * (dirY / dirX)
 
         var dof = 0
-        while (dof < 16) {
+        while (dof < depth) {
             val mapX = rayVX.toInt()
             val mapY = rayVY.toInt()
             if (mapX in 0..<level.mapX * level.size && mapY in 0..<level.mapY * level.size && level.get(mapX, mapY) == 1) break
