@@ -143,7 +143,10 @@ class Player(
             val xLeft = (viewStartX + r * colWidth)
             val xRight = (viewStartX + (r + 1) * colWidth)
 
-            val wallTexture = Textures.brick!!
+            val wallTexture = when (hitResult) {
+                is HitResult.Horizontal -> Textures.brick
+                is HitResult.Vertical -> Textures.wall
+            }
 
             val texY = texYStep * texYOffset
             val texX = when (hitResult) {
@@ -151,23 +154,23 @@ class Player(
                 is HitResult.Vertical -> hitPos.y % 64 / 2.0
             }
 
-            for (screenX in xLeft.toInt()..<xRight.toInt()) {
-                var currentTexY = texY
-                for (y in 0..<lineHeight.toInt()) {
-                    var pixelColor = wallTexture[texX.toInt(), currentTexY.toInt()].toFloat()
+            Renderer.draw(GL_POINTS) {
+                for (screenX in xLeft.toInt()..<xRight.toInt()) {
+                    var currentTexY = texY
+                    for (y in 0..<lineHeight.toInt()) {
+                        var pixelColor = wallTexture[texX.toInt(), currentTexY.toInt()].toFloat()
 
-                    pixelColor *= when (hitResult) {
-                        is HitResult.Horizontal -> 0.9f
-                        is HitResult.Vertical -> 0.5f
-                    }
+                        pixelColor *= when (hitResult) {
+                            is HitResult.Horizontal -> 0.9f
+                            is HitResult.Vertical -> 0.5f
+                        }
 
-                    glColor3f(pixelColor, pixelColor, pixelColor)
-                    glPointSize(8f)
-                    Renderer.draw(GL_POINTS) {
+                        glColor3f(pixelColor, pixelColor, pixelColor)
+                        glPointSize(8f)
                         Renderer.addVertex(screenX.toDouble(), y + lineOffset)
-                    }
 
-                    currentTexY += texYStep
+                        currentTexY += texYStep
+                    }
                 }
             }
         }

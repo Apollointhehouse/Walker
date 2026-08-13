@@ -29,21 +29,16 @@ class JsonTexture(private val model: JsonTextureModel) : Texture {
             prettyPrint = true
         }
 
-        fun load(name: String): JsonTexture? {
-            try {
-                val stream: InputStream? = javaClass.getResourceAsStream("/assets/textures/$name")
-                if (stream == null) {
-                    logger.error("Texture $name not found!")
-                    return null
-                }
-
-                val model = json.decodeFromStream<JsonTextureModel>(stream)
-
-                return JsonTexture(model)
-            } catch (e: Exception) {
-                e.printStackTrace()
-                return null
+        fun load(name: String): JsonTexture {
+            val stream: InputStream? = javaClass.getResourceAsStream("/assets/textures/$name")
+            if (stream == null) {
+                logger.error("Texture $name not found!")
+                throw IllegalStateException("Texture $name not found!")
             }
+
+            val model = json.decodeFromStream<JsonTextureModel>(stream)
+
+            return JsonTexture(model)
         }
     }
 }
