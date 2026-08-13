@@ -2,13 +2,13 @@ package dev.apollointhehouse.walker.entity
 
 import dev.apollointhehouse.walker.input.PlayerInputHandler
 import dev.apollointhehouse.walker.level.Level
+import dev.apollointhehouse.walker.utils.math.raycast
 import org.apache.logging.log4j.kotlin.logger
 import org.joml.Math.lerp
 import org.joml.Vector2d
 import org.lwjgl.opengl.GL11.*
 import kotlin.math.cos
 import kotlin.math.sin
-import kotlin.math.tan
 
 class Player(
     private val level: Level,
@@ -53,14 +53,8 @@ class Player(
 
     private val input = PlayerInputHandler()
 
-    private var raycastHit: Vector2d? = null
-    private var raycastHitOld: Vector2d? = null
-
     override fun tick() {
         move()
-
-        raycastHitOld = raycastHit
-        raycastHit = raycast(angle)
     }
 
     private fun move() {
@@ -93,115 +87,21 @@ class Player(
         dy *= 0.6
     }
 
-    private fun raycast(angle: Double): Vector2d {
-        var mapX = 0
-        var mapY = 0
-        var dof = 0
+    private fun drawRays(count: Int) {
+        for (r in 1..count) {
+            val rawAngle = angle + (r - count / 2) * Math.toRadians(1.0)
+            val rayAngle = ((rawAngle % Math.TAU) + Math.TAU) % Math.TAU
 
-        var rayHX = 0.0
-        var rayHY = 0.0
+            glColor3f(1f, 0f, 0f)
+            glLineWidth(1.0f)
+            glBegin(GL_LINES)
+            glVertex2d(x, y)
 
-        var rayVX = 0.0
-        var rayVY = 0.0
+            val (pos) = raycast(position, level, rayAngle)
 
-        var xOffset = 0.0
-        var yOffset = 0.0
-
-        var hDist = Double.POSITIVE_INFINITY
-        var vDist = Double.POSITIVE_INFINITY
-
-        for (r in 0..<1) {
-            // Horizontal
-            val aTan = -1.0 / tan(angle)
-
-            if (angle > Math.PI) {
-                rayHY = (y.toInt() shr 6 shl 6) - 0.0001
-                rayHX = (y - rayHY) * aTan + x
-                yOffset -= 64
-                xOffset -= yOffset * aTan
-            }
-
-            if (angle < Math.PI) {
-                rayHY = (y.toInt() shr 6 shl 6) + 64.0
-                rayHX = (y - rayHY) * aTan + x
-                yOffset += 64
-                xOffset -= yOffset * aTan
-            }
-
-            if (angle == 0.0 || angle == Math.PI) {
-                rayHX = x
-                rayHY = y
-
-                dof = 8
-            }
-
-            while (dof < 8) {
-                mapX = rayHX.toInt() shr 6
-                mapY = rayHY.toInt() shr 6
-
-                if (mapX < level.mapX && mapY < level.mapY && level.get(mapX, mapY) == 1) {
-                    dof = 8
-                } else {
-                    rayHX += xOffset
-                    rayHY += yOffset
-                    dof += 1
-                }
-            }
-
-            hDist = position.distance(rayHX, rayHY)
-
-
-            // Vertical
-            xOffset = 0.0
-            yOffset = 0.0
-            dof = 0
-            val nTan = -tan(angle)
-
-            if (angle > Math.TAU / 4 && angle < 3 * Math.TAU / 4) {
-                rayVX = (x.toInt() shr 6 shl 6) - 0.0001
-                rayVY = (x - rayVX) * nTan + y
-                xOffset -= 64
-                yOffset -= xOffset * nTan
-            }
-
-            if (angle < Math.TAU / 4 || angle > 3 * Math.TAU / 4) {
-                rayVX = (x.toInt() shr 6 shl 6) + 64.0
-                rayVY = (x - rayVX) * nTan + y
-                xOffset += 64
-                yOffset -= xOffset * nTan
-            }
-
-            if (angle == 0.0 || angle == Math.PI) {
-                rayVX = x
-                rayVY = y
-
-                dof = 8
-            }
-
-            while (dof < 8) {
-                mapX = rayVX.toInt() shr 6
-                mapY = rayVY.toInt() shr 6
-
-                if (mapX < level.mapX && mapY < level.mapY && level.get(mapX, mapY) == 1) {
-                    dof = 8
-                } else {
-                    rayVX += xOffset
-                    rayVY += yOffset
-                    dof += 1
-                }
-            }
-
-            vDist = position.distance(rayVX, rayVY)
-
+            glVertex2d(pos.x, pos.y)
+            glEnd()
         }
-
-
-        return if (hDist < vDist) {
-            Vector2d(rayHX, rayHY)
-        } else {
-            Vector2d(rayVX, rayVY)
-        }
-
     }
 
     override fun render(deltaTime: Double) {
@@ -225,14 +125,6 @@ class Player(
         glVertex2d(x + lerpDX * speed, y + lerpDY * speed)
         glEnd()
 
-        glColor3f(0f, 1f, 0f)
-        glLineWidth(1.0f)
-        glBegin(GL_LINES)
-        glVertex2d(x, y)
-
-        val lerpHit = raycastHit?.let { raycastHitOld?.lerp(it, deltaTime, Vector2d()) } ?: position
-
-        glVertex2d(lerpHit.x, lerpHit.y)
-        glEnd()
+        drawRays(120)
     }
 }

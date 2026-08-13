@@ -66,7 +66,7 @@ kotlin {
     }
 
     compilerOptions {
-        freeCompilerArgs.add("-Xcollection-literals")
+        freeCompilerArgs.addAll("-Xcollection-literals", "-Xname-based-destructuring=complete")
     }
 }
 
