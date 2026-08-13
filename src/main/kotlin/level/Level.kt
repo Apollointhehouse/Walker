@@ -20,11 +20,11 @@ class Level : Drawable {
     ]
 
     fun get(x: Int, y: Int): Int {
-        if (x !in 0..<mapX || y !in 0..<mapY) {
+        if ((x / 64) !in 0..<mapX || (y / 64) !in 0..<mapY) {
             return 0
         }
 
-        return map[mapY - y - 1][x]
+        return map[mapY - (y / 64) - 1][x / 64]
     }
 
     override fun render(deltaTime: Double) {

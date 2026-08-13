@@ -3,7 +3,9 @@ package dev.apollointhehouse.walker.entity
 import dev.apollointhehouse.walker.input.PlayerInputHandler
 import dev.apollointhehouse.walker.level.Level
 import dev.apollointhehouse.walker.utils.math.HitResult
+import dev.apollointhehouse.walker.utils.math.angleRange
 import dev.apollointhehouse.walker.utils.math.deltaAngle
+import dev.apollointhehouse.walker.utils.math.lerpAngle
 import dev.apollointhehouse.walker.utils.math.raycast
 import org.apache.logging.log4j.kotlin.logger
 import org.joml.Math.lerp
@@ -17,6 +19,8 @@ class Player(
     private val level: Level,
     private val position: Vector2d = Vector2d(300.0, 300.0)
 ) : Entity {
+    private val oldPosition = Vector2d(position)
+
     override var x: Double
         get() = position.x()
         private set(value) { position.set(value, y) }
@@ -24,10 +28,12 @@ class Player(
         get() = position.y()
         private set(value) { position.set(x, value) }
 
-    override var xo: Double = x
-        private set
-    override var yo: Double = y
-        private set
+    override var xo: Double
+        get() = oldPosition.x()
+        private set(value) { oldPosition.set(value, yo) }
+    override var yo: Double
+        get() = oldPosition.y()
+        private set(value) { oldPosition.set(xo, value) }
 
     override var dx: Double = 0.0
         private set
@@ -52,8 +58,6 @@ class Player(
                 sin(angle),
             )
 
-    private val speed = 8.0
-
     private val input = PlayerInputHandler()
 
     override fun tick() {
@@ -74,33 +78,38 @@ class Player(
 
         angle = ((angle % Math.TAU) + Math.TAU) % Math.TAU
 
-        val addSpeedX = direction.x * speed
-        val addSpeedY = direction.y * speed
-        dx = input.forward * addSpeedX
-        dy = input.forward * addSpeedY
+        val addSpeedX = direction.x * SPEED
+        val addSpeedY = direction.y * SPEED
+        dx += input.forward * addSpeedX
+        dy += input.forward * addSpeedY
+
+        if (level.get((x + dx).toInt(), y.toInt()) == 0) x += dx
+        if (level.get(x.toInt() , (y + dy).toInt()) == 0) y += dy
 
 //        logger.info("dx: %.2f, dy: %.2f".format(dx, dy))
-//        logger.info("x: %.2f, y: %.2f".format(x, y))
-        logger.info("angle %.2f".format(angle))
+        logger.info("x: %.2f, y: %.2f".format(x, y))
+//        logger.info("angle %.2f".format(angle))
 
-        x += dx
-        y += dy
+//        x += dx
+//        y += dy
 
-        dx *= 0.6
-        dy *= 0.6
+        dx *= FRICTION
+        dy *= FRICTION
     }
 
-    private fun drawRays(count: Int, precision: Double) {
+    private fun drawRays(count: Int, precision: Double, deltaTime: Double) {
         for (r in 0..<count) {
-            val rawAngle = angle - (r - count / 2.0 + 0.5) * precision
+            val rawAngle = lerpAngle(angleO, angle, deltaTime) - (r - count / 2.0 + 0.5) * precision
             val rayAngle = ((rawAngle % Math.TAU) + Math.TAU) % Math.TAU
 
-            val hitResult = raycast(position, level, rayAngle)
+            val hitResult = raycast(oldPosition.lerp(position, deltaTime, Vector2d()), level, rayAngle)
             (val pos, var dist) = hitResult
 
+            val colorMult = angleRange(rayAngle, 0.9, 1.1)
+
             when (hitResult) {
-                is HitResult.Horizontal -> glColor3f(0.9f, 0f, 0f)
-                is HitResult.Vertical -> glColor3f(0.7f, 0f, 0f)
+                is HitResult.Horizontal -> glColor3d(colorMult * 0.9, 0.0, 0.0)
+                is HitResult.Vertical -> glColor3d(colorMult * 0.7, 0.0, 0.0)
             }
 
             glLineWidth(1.0f)
@@ -150,9 +159,17 @@ class Player(
         glLineWidth(2f)
         glBegin(GL_LINES)
         glVertex2d(x, y)
-        glVertex2d(x + lerpDX * speed, y + lerpDY * speed)
+        glVertex2d(x + lerpDX * SPEED, y + lerpDY * SPEED)
         glEnd()
 
-        drawRays(240, Math.toRadians(0.25))
+        drawRays((FOV / PRECISION).toInt(), Math.toRadians(PRECISION), deltaTime)
+    }
+
+    companion object {
+        private const val FOV = 80.0
+        private const val PRECISION = 0.125
+
+        private const val SPEED = 6.0
+        private const val FRICTION = 0.5
     }
 }
