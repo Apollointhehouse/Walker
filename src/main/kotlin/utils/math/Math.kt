@@ -27,7 +27,7 @@ sealed class HitResult(val hitPos: Vector2d, val dist: Double) {
     class Vertical(pos: Vector2d, dist: Double) : HitResult(pos, dist)
 }
 
-fun raycast(initialPos: Vector2d, level: Level, angle: Double, depth: Int = 16): HitResult {
+fun raycast(initialPos: Vector2d, level: Level, angle: Double, depth: Int = 64): HitResult {
     val (x, y) = initialPos
     val dirX = cos(angle)
     val dirY = sin(angle)
