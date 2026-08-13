@@ -5,7 +5,6 @@ import dev.apollointhehouse.walker.level.Level
 import dev.apollointhehouse.walker.render.Renderer
 import dev.apollointhehouse.walker.render.texture.Textures
 import dev.apollointhehouse.walker.utils.math.*
-import org.apache.logging.log4j.kotlin.logger
 import org.joml.Vector2d
 import org.joml.plus
 import org.joml.times
@@ -86,11 +85,11 @@ class Player(
         dx += input.forward * addSpeedX
         dy += input.forward * addSpeedY
 
-        if (level.get((x + dx).toInt(), y.toInt()) == 0) x += dx
-        if (level.get(x.toInt() , (y + dy).toInt()) == 0) y += dy
+        if (level.get((x + dx).toInt(), y.toInt()) == 0 || level.get(x.toInt(), y.toInt()) == 1) x += dx
+        if (level.get(x.toInt() , (y + dy).toInt()) == 0 || level.get(x.toInt(), y.toInt()) == 1) y += dy
 
 //        logger.info("dx: %.2f, dy: %.2f".format(dx, dy))
-        logger.info("x: %.2f, y: %.2f".format(x, y))
+//        logger.info("x: %.2f, y: %.2f".format(x, y))
 //        logger.info("angle %.2f".format(angle))
 
         dx *= FRICTION
@@ -135,25 +134,28 @@ class Player(
             val viewCenterY = 256.0
             val lineOffset = (viewCenterY - lineHeight).toFloat() / 2.0
 
-            val screenWidth = 1024.0
-            val viewStartX = 530.0
-            val colWidth = (screenWidth - viewStartX) / count
+            val viewStartX = 512.0
+            val colWidth = (1024.0 - viewStartX) / count
 
             val xLeft = (viewStartX + r * colWidth)
             val xRight = (viewStartX + (r + 1) * colWidth)
 
             val wallTexture = Textures.wall!!
 
-            var texY = texYStep*texYOffset
-
+            var texY = texYStep * texYOffset
+            val texX = when (hitResult) {
+                is HitResult.Horizontal -> hitPos.x % 64 / 2.0
+                is HitResult.Vertical -> hitPos.y % 64 / 2.0
+            }
 
             for (screenX in xLeft.toInt()..<xRight.toInt()) {
+                var currentTexY = texY
                 for (y in 0..<lineHeight.toInt()) {
-                    var pixelColor = wallTexture.get(texY.toInt()).toFloat()
+                    var pixelColor = wallTexture[texX.toInt(), currentTexY.toInt()].toFloat()
 
                     pixelColor *= when (hitResult) {
                         is HitResult.Horizontal -> 0.9f
-                        is HitResult.Vertical -> 0.7f
+                        is HitResult.Vertical -> 0.5f
                     }
 
                     glColor3f(pixelColor, pixelColor, pixelColor)
@@ -162,7 +164,7 @@ class Player(
                         Renderer.addVertex(screenX.toDouble(), y + lineOffset)
                     }
 
-                    texY += texYStep
+                    currentTexY += texYStep
                 }
             }
         }

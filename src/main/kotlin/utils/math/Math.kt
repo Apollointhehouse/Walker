@@ -48,7 +48,7 @@ fun raycast(initialPos: Vector2d, level: Level, angle: Double): HitResult {
         rayHX = x + (rayHY - y) * (dirX / dirY)
 
         var dof = 0
-        while (dof < 8) {
+        while (dof < 16) {
             val mapX = rayHX.toInt()
             val mapY = rayHY.toInt()
             if (mapX in 0..<level.mapX * level.size && mapY in 0..<level.mapY * level.size && level.get(mapX, mapY) == 1) break
@@ -73,7 +73,7 @@ fun raycast(initialPos: Vector2d, level: Level, angle: Double): HitResult {
         rayVY = y + (rayVX - x) * (dirY / dirX)
 
         var dof = 0
-        while (dof < 8) {
+        while (dof < 16) {
             val mapX = rayVX.toInt()
             val mapY = rayVY.toInt()
             if (mapX in 0..<level.mapX * level.size && mapY in 0..<level.mapY * level.size && level.get(mapX, mapY) == 1) break

@@ -1,11 +1,13 @@
 package dev.apollointhehouse.walker.level
 
+import dev.apollointhehouse.walker.input.Input
 import dev.apollointhehouse.walker.render.Drawable
 import dev.apollointhehouse.walker.serialization.JsonLevelModel
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromStream
 import org.apache.logging.log4j.kotlin.logger
+import org.lwjgl.glfw.GLFW
 import org.lwjgl.opengl.GL11
 import java.io.InputStream
 
@@ -37,6 +39,8 @@ class JsonLevel(private val model: JsonLevelModel) : Drawable, Level {
     }
 
     override fun render(deltaTime: Double) {
+        if (!Input.isKeyDown(GLFW.GLFW_KEY_K)) return
+
         val gap = 1
 
         for (row in 0..<mapY) {

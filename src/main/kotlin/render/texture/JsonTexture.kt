@@ -13,12 +13,16 @@ class JsonTexture(private val model: JsonTextureModel) : Texture {
     val xSize get() = model.xSize
     val ySize get() = model.ySize
 
-    override fun get(x: Int, y: Int): Int =
-        model.data[(model.ySize - 1 - y) * model.xSize + x]
+    override fun get(x: Int, y: Int): Int {
+        val safeX = x.coerceIn(0, model.xSize - 1)
+        val safeY = y.coerceIn(0, model.ySize - 1)
+        return model.data[(model.ySize - 1 - safeY) * model.xSize + safeX]
+    }
 
     fun get(i: Int): Int {
-        val x = i % model.xSize
-        val y = i / model.xSize
+        val safeI = i.coerceIn(0, model.data.size - 1)
+        val x = safeI % model.xSize
+        val y = safeI / model.xSize
         return model.data[(model.ySize - 1 - y) * model.xSize + x]
     }
 
