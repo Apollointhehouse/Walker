@@ -4,6 +4,7 @@ jomlVersion = "1.10.9"
 log4j = "2.26.1"
 log4j-api-kotlin = "1.5.0"
 jackson-databind = "2.19.2"
+kotlinx-serialization-json = "1.11.0"
 
 [libraries]
 lwjgl = { group = "org.lwjgl", name = "lwjgl", version.ref = "lwjglVersion" }
@@ -13,6 +14,8 @@ lwjgl-openal = { group = "org.lwjgl", name = "lwjgl-openal", version.ref = "lwjg
 lwjgl-opengl = { group = "org.lwjgl", name = "lwjgl-opengl", version.ref = "lwjglVersion" }
 lwjgl-stb = { group = "org.lwjgl", name = "lwjgl-stb", version.ref = "lwjglVersion" }
 lwjgl-sdl = { group = "org.lwjgl", name = "lwjgl-sdl", version.ref = "lwjglVersion" }
+
+kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinx-serialization-json" }
 
 joml = { group = "org.joml", name = "joml", version.ref = "jomlVersion" }
 

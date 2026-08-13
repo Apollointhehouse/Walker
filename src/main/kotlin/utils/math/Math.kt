@@ -19,6 +19,9 @@ fun deltaAngle(a: Double, b: Double): Double =
 fun angleRange(angle: Double, min: Double, max: Double): Double =
     ((max - min) / 2.0) * (cos(angle) - (-1.0)) + min
 
+fun fixAngle(angle: Double): Double =
+    ((angle % Math.TAU) + Math.TAU) % Math.TAU
+
 sealed class HitResult(val hitPos: Vector2d, val dist: Double) {
     class Horizontal(pos: Vector2d, dist: Double) : HitResult(pos, dist)
     class Vertical(pos: Vector2d, dist: Double) : HitResult(pos, dist)
@@ -48,7 +51,7 @@ fun raycast(initialPos: Vector2d, level: Level, angle: Double): HitResult {
         while (dof < 8) {
             val mapX = rayHX.toInt()
             val mapY = rayHY.toInt()
-            if (mapX in 0..<level.mapX * level.mapSize && mapY in 0..<level.mapY * level.mapSize && level.get(mapX, mapY) == 1) break
+            if (mapX in 0..<level.mapX * level.size && mapY in 0..<level.mapY * level.size && level.get(mapX, mapY) == 1) break
             rayHX += xOffset
             rayHY += yOffset
             dof++
@@ -73,7 +76,7 @@ fun raycast(initialPos: Vector2d, level: Level, angle: Double): HitResult {
         while (dof < 8) {
             val mapX = rayVX.toInt()
             val mapY = rayVY.toInt()
-            if (mapX in 0..<level.mapX * level.mapSize && mapY in 0..<level.mapY * level.mapSize && level.get(mapX, mapY) == 1) break
+            if (mapX in 0..<level.mapX * level.size && mapY in 0..<level.mapY * level.size && level.get(mapX, mapY) == 1) break
             rayVX += xOffset
             rayVY += yOffset
             dof++

@@ -3,6 +3,7 @@ package dev.apollointhehouse.walker.entity
 import dev.apollointhehouse.walker.input.PlayerInputHandler
 import dev.apollointhehouse.walker.level.Level
 import dev.apollointhehouse.walker.render.Renderer
+import dev.apollointhehouse.walker.render.texture.Textures
 import dev.apollointhehouse.walker.utils.math.*
 import org.apache.logging.log4j.kotlin.logger
 import org.joml.Vector2d
@@ -10,7 +11,6 @@ import org.joml.plus
 import org.joml.times
 import org.lwjgl.opengl.GL11.*
 import kotlin.math.cos
-import kotlin.math.min
 import kotlin.math.sin
 
 class Player(
@@ -79,8 +79,7 @@ class Player(
 
         angleO = angle
         angle += input.strafe * -Math.toRadians(5.0)
-
-        angle = ((angle % Math.TAU) + Math.TAU) % Math.TAU
+        angle = fixAngle(angle)
 
         val addSpeedX = direction.x * SPEED
         val addSpeedY = direction.y * SPEED
@@ -94,9 +93,6 @@ class Player(
         logger.info("x: %.2f, y: %.2f".format(x, y))
 //        logger.info("angle %.2f".format(angle))
 
-//        x += dx
-//        y += dy
-
         dx *= FRICTION
         dy *= FRICTION
     }
@@ -105,17 +101,15 @@ class Player(
         for (r in 0..<count) {
             val lerpAngle = lerpAngle(angleO, angle, deltaTime)
             val rawAngle = lerpAngle - (r - count / 2.0 + 0.5) * precision
-            val rayAngle = ((rawAngle % Math.TAU) + Math.TAU) % Math.TAU
+            val rayAngle = fixAngle(rawAngle)
 
             val lerpPos = oldPosition.lerp(position, deltaTime, Vector2d())
             val hitResult = raycast(lerpPos, level, rayAngle)
             (val hitPos, var dist) = hitResult
 
-            val colorMult = angleRange(rayAngle, 0.9, 1.1)
-
             when (hitResult) {
-                is HitResult.Horizontal -> glColor3d(colorMult * 0.9, 0.0, 0.0)
-                is HitResult.Vertical -> glColor3d(colorMult * 0.7, 0.0, 0.0)
+                is HitResult.Horizontal -> glColor3d(0.9, 0.0, 0.0)
+                is HitResult.Vertical -> glColor3d(0.7, 0.0, 0.0)
             }
 
             glLineWidth(1.0f)
@@ -129,7 +123,15 @@ class Player(
 
             dist *= cos(deltaAngle)
 
-            val lineHeight = min((level.mapSize * 320) / dist, 320.0)
+            var lineHeight = (level.size * 320) / dist
+            val texYStep = 32.0 / ((level.size * 320) / dist)
+            var texYOffset = 0.0
+
+            if (lineHeight > 320.0) {
+                texYOffset = (lineHeight - 320) / 2.0
+                lineHeight = 320.0
+            }
+
             val viewCenterY = 256.0
             val lineOffset = (viewCenterY - lineHeight).toFloat() / 2.0
 
@@ -140,11 +142,28 @@ class Player(
             val xLeft = (viewStartX + r * colWidth)
             val xRight = (viewStartX + (r + 1) * colWidth)
 
-            Renderer.draw(GL_QUADS) {
-                Renderer.addVertex(xLeft, lineOffset)
-                Renderer.addVertex(xRight, lineOffset)
-                Renderer.addVertex(xRight, lineHeight.toFloat() + lineOffset)
-                Renderer.addVertex(xLeft, lineHeight.toFloat() + lineOffset)
+            val wallTexture = Textures.wall!!
+
+            var texY = texYStep*texYOffset
+
+
+            for (screenX in xLeft.toInt()..<xRight.toInt()) {
+                for (y in 0..<lineHeight.toInt()) {
+                    var pixelColor = wallTexture.get(texY.toInt()).toFloat()
+
+                    pixelColor *= when (hitResult) {
+                        is HitResult.Horizontal -> 0.9f
+                        is HitResult.Vertical -> 0.7f
+                    }
+
+                    glColor3f(pixelColor, pixelColor, pixelColor)
+                    glPointSize(8f)
+                    Renderer.draw(GL_POINTS) {
+                        Renderer.addVertex(screenX.toDouble(), y + lineOffset)
+                    }
+
+                    texY += texYStep
+                }
             }
         }
     }
@@ -160,15 +179,17 @@ class Player(
 
         val lerpVel = oldVelocity.lerp(velocity, deltaTime, Vector2d())
 
-        glColor3f(1.0f, 0.0f, 0.0f)
+        glColor3f(1.0f, 1.0f, 0.0f)
         glLineWidth(2f)
 
         Renderer.draw(GL_LINES) {
-            Renderer.addVertex(position)
-            Renderer.addVertex(position + lerpVel * SPEED)
+            Renderer.addVertex(lerpPos)
+            Renderer.addVertex(lerpPos + lerpVel * SPEED)
         }
 
-        drawRays((FOV / PRECISION).toInt(), Math.toRadians(PRECISION), deltaTime)
+        val rayCount = (FOV / PRECISION).toInt()
+
+        drawRays(rayCount, Math.toRadians(PRECISION), deltaTime)
     }
 
     companion object {

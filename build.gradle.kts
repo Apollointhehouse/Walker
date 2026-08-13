@@ -4,6 +4,7 @@ repositories {
 
 plugins {
     kotlin("jvm") version "2.4.0"
+    kotlin("plugin.serialization") version "2.3.20"
     application
 }
 group = "dev.apollointhehouse.walker"
@@ -51,6 +52,9 @@ dependencies {
     implementation("org.lwjgl:lwjgl-opengl::$lwjglNatives")
     implementation("org.lwjgl:lwjgl-stb::$lwjglNatives")
     implementation("org.lwjgl:lwjgl-sdl::$lwjglNatives")
+
+    // Serialization
+    implementation(libs.kotlinx.serialization.json)
 
     testImplementation(kotlin("test"))
     implementation(kotlin("reflect"))

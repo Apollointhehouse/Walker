@@ -1,14 +1,14 @@
 package dev.apollointhehouse.walker
 
 import dev.apollointhehouse.walker.entity.Player
-import dev.apollointhehouse.walker.level.Level
+import dev.apollointhehouse.walker.level.DrawableLevel
 import dev.apollointhehouse.walker.render.Renderer
 import org.lwjgl.glfw.GLFW.glfwSetErrorCallback
 import org.lwjgl.glfw.GLFW.glfwTerminate
 import org.lwjgl.glfw.GLFW.glfwWindowShouldClose
 
 class Game : Tickable {
-    val level = Level()
+    val level = DrawableLevel()
     val player = Player(level)
 
     fun run() {
