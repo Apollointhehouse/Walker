@@ -2,7 +2,9 @@ package dev.apollointhehouse.walker.utils.math
 
 import dev.apollointhehouse.walker.level.Level
 import org.joml.Vector2d
-import kotlin.math.tan
+import kotlin.math.cos
+import kotlin.math.floor
+import kotlin.math.sin
 
 fun lerpAngle(a: Double, b: Double, t: Double): Double {
     var delta = (b - a) % Math.TAU
@@ -11,111 +13,74 @@ fun lerpAngle(a: Double, b: Double, t: Double): Double {
     return a + delta * t
 }
 
-class HitResult(val pos: Vector2d, val dist: Double)
+fun deltaAngle(a: Double, b: Double): Double =
+    ((a - b % Math.TAU) + Math.TAU) % Math.TAU
+
+fun angleRange(angle: Double, min: Double, max: Double): Double =
+    ((max - min) / 2.0) * (cos(angle) - (-1.0)) + min
+
+sealed class HitResult(val pos: Vector2d, val dist: Double) {
+    class Horizontal(pos: Vector2d, dist: Double) : HitResult(pos, dist)
+    class Vertical(pos: Vector2d, dist: Double) : HitResult(pos, dist)
+}
 
 fun raycast(initialPos: Vector2d, level: Level, angle: Double): HitResult {
     val (x, y) = initialPos
+    val dirX = cos(angle)
+    val dirY = sin(angle)
+    val grid = 64.0
+    val eps = 0.0001
 
-    var mapX: Int
-    var mapY: Int
-    var dof = 0
+    // Horizontal grid lines (constant y)
+    var rayHX = x
+    var rayHY = y
+    var hDist = Double.MAX_VALUE
 
-    var rayHX = 0.0
-    var rayHY = 0.0
+    if (dirY != 0.0) {
+        val yOffset = if (dirY > 0) grid else -grid
+        val xOffset = yOffset * (dirX / dirY)
 
-    var rayVX = 0.0
-    var rayVY = 0.0
+        rayHY = if (dirY > 0) (floor(y / grid) + 1) * grid
+        else floor(y / grid) * grid - eps
+        rayHX = x + (rayHY - y) * (dirX / dirY)
 
-    var xOffset = 0.0
-    var yOffset = 0.0
-
-    // Horizontal
-    val aTan = -1.0 / tan(angle)
-
-    if (angle > Math.PI) {
-        rayHY = (y.toInt() shr 6 shl 6) - 0.0001
-        rayHX = (y - rayHY) * aTan + x
-        yOffset -= 64
-        xOffset -= yOffset * aTan
-    }
-
-    if (angle < Math.PI) {
-        rayHY = (y.toInt() shr 6 shl 6) + 64.0
-        rayHX = (y - rayHY) * aTan + x
-        yOffset += 64
-        xOffset -= yOffset * aTan
-    }
-
-    if (angle == 0.0 || angle == Math.PI) {
-        rayHX = x
-        rayHY = y
-
-        dof = 8
-    }
-
-    while (dof < 8) {
-        mapX = rayHX.toInt() shr 6
-        mapY = rayHY.toInt() shr 6
-
-        if (mapX < level.mapX && mapY < level.mapY && level.get(mapX, mapY) == 1) {
-            dof = 8
-        } else {
+        var dof = 0
+        while (dof < 8) {
+            val mapX = rayHX.toInt() shr 6
+            val mapY = rayHY.toInt() shr 6
+            if (mapX in 0..<level.mapX && mapY in 0..<level.mapY && level.get(mapX, mapY) == 1) break
             rayHX += xOffset
             rayHY += yOffset
-            dof += 1
+            dof++
         }
+        hDist = initialPos.distance(rayHX, rayHY)
     }
 
-    val hDist: Double = initialPos.distance(rayHX, rayHY)
+    // Vertical grid lines (constant x)
+    var rayVX = x
+    var rayVY = y
+    var vDist = Double.MAX_VALUE
 
+    if (dirX != 0.0) {
+        val xOffset = if (dirX > 0) grid else -grid
+        val yOffset = xOffset * (dirY / dirX)
 
-    // Vertical
-    xOffset = 0.0
-    yOffset = 0.0
-    dof = 0
-    val nTan = -tan(angle)
+        rayVX = if (dirX > 0) (floor(x / grid) + 1) * grid
+        else floor(x / grid) * grid - eps
+        rayVY = y + (rayVX - x) * (dirY / dirX)
 
-    if (angle > Math.TAU / 4 && angle < 3 * Math.TAU / 4) {
-        rayVX = (x.toInt() shr 6 shl 6) - 0.0001
-        rayVY = (x - rayVX) * nTan + y
-        xOffset -= 64
-        yOffset -= xOffset * nTan
-    }
-
-    if (angle < Math.TAU / 4 || angle > 3 * Math.TAU / 4) {
-        rayVX = (x.toInt() shr 6 shl 6) + 64.0
-        rayVY = (x - rayVX) * nTan + y
-        xOffset += 64
-        yOffset -= xOffset * nTan
-    }
-
-    if (angle == 0.0 || angle == Math.PI) {
-        rayVX = x
-        rayVY = y
-
-        dof = 8
-    }
-
-    while (dof < 8) {
-        mapX = rayVX.toInt() shr 6
-        mapY = rayVY.toInt() shr 6
-
-        if (mapX < level.mapX && mapY < level.mapY && level.get(mapX, mapY) == 1) {
-            dof = 8
-        } else {
+        var dof = 0
+        while (dof < 8) {
+            val mapX = rayVX.toInt() shr 6
+            val mapY = rayVY.toInt() shr 6
+            if (mapX in 0..<level.mapX && mapY in 0..<level.mapY && level.get(mapX, mapY) == 1) break
             rayVX += xOffset
             rayVY += yOffset
-            dof += 1
+            dof++
         }
+        vDist = initialPos.distance(rayVX, rayVY)
     }
 
-    val vDist: Double = initialPos.distance(rayVX, rayVY)
-
-
-    return if (hDist < vDist) {
-        HitResult(Vector2d(rayHX, rayHY), hDist)
-    } else {
-        HitResult(Vector2d(rayVX, rayVY), vDist)
-    }
-
+    return if (hDist < vDist) HitResult.Horizontal(Vector2d(rayHX, rayHY), hDist)
+    else HitResult.Vertical(Vector2d(rayVX, rayVY), vDist)
 }

@@ -2,12 +2,15 @@ package dev.apollointhehouse.walker.entity
 
 import dev.apollointhehouse.walker.input.PlayerInputHandler
 import dev.apollointhehouse.walker.level.Level
+import dev.apollointhehouse.walker.utils.math.HitResult
+import dev.apollointhehouse.walker.utils.math.deltaAngle
 import dev.apollointhehouse.walker.utils.math.raycast
 import org.apache.logging.log4j.kotlin.logger
 import org.joml.Math.lerp
 import org.joml.Vector2d
 import org.lwjgl.opengl.GL11.*
 import kotlin.math.cos
+import kotlin.math.min
 import kotlin.math.sin
 
 class Player(
@@ -87,19 +90,44 @@ class Player(
         dy *= 0.6
     }
 
-    private fun drawRays(count: Int) {
-        for (r in 1..count) {
-            val rawAngle = angle + (r - count / 2) * Math.toRadians(1.0)
+    private fun drawRays(count: Int, precision: Double) {
+        for (r in 0..<count) {
+            val rawAngle = angle - (r - count / 2.0 + 0.5) * precision
             val rayAngle = ((rawAngle % Math.TAU) + Math.TAU) % Math.TAU
 
-            glColor3f(1f, 0f, 0f)
+            val hitResult = raycast(position, level, rayAngle)
+            (val pos, var dist) = hitResult
+
+            when (hitResult) {
+                is HitResult.Horizontal -> glColor3f(0.9f, 0f, 0f)
+                is HitResult.Vertical -> glColor3f(0.7f, 0f, 0f)
+            }
+
             glLineWidth(1.0f)
             glBegin(GL_LINES)
             glVertex2d(x, y)
-
-            val (pos) = raycast(position, level, rayAngle)
-
             glVertex2d(pos.x, pos.y)
+            glEnd()
+
+            val deltaAngle = deltaAngle(angle, rayAngle)
+
+            dist *= cos(deltaAngle)
+
+            val lineHeight = min((level.mapSize * 320) / dist, 320.0)
+            val viewCenterY = 256.0
+            val lineOffset = (viewCenterY - lineHeight).toFloat() / 2f
+
+            val screenWidth = 1024.0
+            val viewStartX = 530.0
+            val colWidth = (screenWidth - viewStartX) / count
+
+            glBegin(GL_QUADS)
+            val xLeft = (viewStartX + r * colWidth).toFloat()
+            val xRight = (viewStartX + (r + 1) * colWidth).toFloat()
+            glVertex2f(xLeft, lineOffset)
+            glVertex2f(xRight, lineOffset)
+            glVertex2f(xRight, lineHeight.toFloat() + lineOffset)
+            glVertex2f(xLeft, lineHeight.toFloat() + lineOffset)
             glEnd()
         }
     }
@@ -125,6 +153,6 @@ class Player(
         glVertex2d(x + lerpDX * speed, y + lerpDY * speed)
         glEnd()
 
-        drawRays(120)
+        drawRays(240, Math.toRadians(0.25))
     }
 }
