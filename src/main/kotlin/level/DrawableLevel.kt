@@ -18,14 +18,12 @@ class DrawableLevel(val player: Player) : Level by player.level, Drawable {
 
         for (row in 0..<mapY) {
             for (col in 0..<mapX) {
-                if (getRaw(col, row) == 1) GL11.glColor3f(1f, 1f, 1f) else GL11.glColor3f(0f, 0f, 0f)
-
-                val flippedRow = mapY - 1 - row
+                if (getRaw(col, row).type == 1) GL11.glColor3f(1f, 1f, 1f) else GL11.glColor3f(0f, 0f, 0f)
 
                 val left   = (col)     * tileSize + gap
                 val right  = (col + 1) * tileSize - gap
-                val top    = (flippedRow)     * tileSize + gap
-                val bottom = (flippedRow + 1) * tileSize - gap
+                val top    = (row)     * tileSize + gap
+                val bottom = (row + 1) * tileSize - gap
 
                 GL11.glBegin(GL11.GL_QUADS)
                 GL11.glVertex2i(left,  top)

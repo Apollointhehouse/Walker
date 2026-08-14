@@ -13,7 +13,6 @@ import org.joml.times
 import org.lwjgl.glfw.GLFW
 import org.lwjgl.opengl.GL11.*
 import kotlin.math.cos
-import kotlin.math.sin
 
 class Player(
     val level: Level,
@@ -58,11 +57,7 @@ class Player(
         private set
 
     private val direction: Vector2d
-        get() =
-            Vector2d(
-                cos(angle),
-                sin(angle),
-            )
+        get() = direction(angle)
 
     private val input = PlayerInputHandler()
 
@@ -88,8 +83,8 @@ class Player(
         dx += input.forward * addSpeedX
         dy += input.forward * addSpeedY
 
-        if (level.get((x + dx).toInt(), y.toInt()) == 0 || level.get(x.toInt(), y.toInt()) == 1) x += dx
-        if (level.get(x.toInt() , (y + dy).toInt()) == 0 || level.get(x.toInt(), y.toInt()) == 1) y += dy
+        if (level.get((x + dx).toInt(), y.toInt()).type == 0 || level.get(x.toInt(), y.toInt()).type == 1) x += dx
+        if (level.get(x.toInt() , (y + dy).toInt()).type == 0 || level.get(x.toInt(), y.toInt()).type == 1) y += dy
 
 //        logger.info("dx: %.2f, dy: %.2f".format(dx, dy))
 //        logger.info("x: %.2f, y: %.2f".format(x, y))
@@ -106,12 +101,16 @@ class Player(
             val rayAngle = fixAngle(rawAngle)
 
             val lerpPos = oldPosition.lerp(position, deltaTime, Vector2d())
-            val hitResult = raycast(lerpPos, level, rayAngle)
-            (val hitPos, var dist) = hitResult
+            val hitResult = raycast(lerpPos, level, rayAngle) ?: continue
+
+            val (hitPos) = hitResult
 
             when (hitResult) {
-                is HitResult.Horizontal -> glColor3d(0.9, 0.0, 0.0)
-                is HitResult.Vertical -> glColor3d(0.7, 0.0, 0.0)
+                is HitResult.Tile -> when (hitResult.hitType) {
+                    is HitType.Horizontal -> glColor3d(0.9, 0.0, 0.0)
+                    is HitType.Vertical   -> glColor3d(0.7, 0.0, 0.0)
+                }
+                is HitResult.Entity -> glColor3d(0.0, 1.0, 0.0)
             }
 
             glLineWidth(1.0f)
@@ -126,8 +125,7 @@ class Player(
             }
 
             val deltaAngle = deltaAngle(lerpAngle, rayAngle)
-
-            dist *= cos(deltaAngle)
+            val dist = hitResult.hitPos.distance(lerpPos) * cos(deltaAngle)
 
             var lineHeight = (level.size * 320) / dist
             val texYStep = 32.0 / ((level.size * 320) / dist)
@@ -156,9 +154,12 @@ class Player(
 
             val texY = texYStep * texYOffset
             val texX = when (hitResult) {
-                is HitResult.Horizontal -> hitPos.x % 64 / 2.0
-                is HitResult.Vertical -> hitPos.y % 64 / 2.0
-            }
+                is HitResult.Tile -> when (hitResult.hitType) {
+                    is HitType.Horizontal -> ((hitPos.x % 64) + 64) % 64
+                    is HitType.Vertical   -> ((hitPos.y % 64) + 64) % 64
+                }
+                is HitResult.Entity -> ((hitPos.x % 64) + 64) % 64
+            } / 2.0
 
             Renderer.draw(GL_POINTS) {
                 for (screenX in xLeft.toInt()..<xRight.toInt()) {
@@ -167,17 +168,20 @@ class Player(
                         val pixelColor = wallTexture[texX.toInt(), currentTexY.toInt()]
 
                         val shade = when (hitResult) {
-                            is HitResult.Horizontal -> 0.9f
-                            is HitResult.Vertical -> 0.5f
+                            is HitResult.Tile -> when (hitResult.hitType) {
+                                is HitType.Horizontal -> 0.9
+                                is HitType.Vertical   -> 0.7
+                            }
+                            is HitResult.Entity -> 0.5
                         }
 
                         when (pixelColor) {
-                            0    -> glColor3f(0f,    0f,    0f   )
-                            1    -> glColor3f(shade, shade, shade)
-                            2    -> glColor3f(shade, 0f,    0f   )
-                            3    -> glColor3f(0f,    shade, 0f   )
-                            4    -> glColor3f(0f,    0f,    shade)
-                            else -> glColor3f(0f,    0f,    0f   )
+                            0    -> glColor3d(0.0,   0.0,   0.0  )
+                            1    -> glColor3d(shade, shade, shade)
+                            2    -> glColor3d(shade, 0.0,   0.0  )
+                            3    -> glColor3d(0.0,   shade, 0.0  )
+                            4    -> glColor3d(0.0,   0.0,   shade)
+                            else -> glColor3d(0.0,   0.0,   0.0  )
                         }
 
 

@@ -2,8 +2,8 @@ package dev.apollointhehouse.walker.utils.math
 
 import dev.apollointhehouse.walker.level.Level
 import org.joml.Vector2d
+import kotlin.math.abs
 import kotlin.math.cos
-import kotlin.math.floor
 import kotlin.math.sin
 
 fun lerpAngle(a: Double, b: Double, t: Double): Double {
@@ -22,68 +22,87 @@ fun angleRange(angle: Double, min: Double, max: Double): Double =
 fun fixAngle(angle: Double): Double =
     ((angle % Math.TAU) + Math.TAU) % Math.TAU
 
-sealed class HitResult(val hitPos: Vector2d, val dist: Double) {
-    class Horizontal(pos: Vector2d, dist: Double) : HitResult(pos, dist)
-    class Vertical(pos: Vector2d, dist: Double) : HitResult(pos, dist)
+fun direction(angle: Double) = Vector2d(
+    cos(angle),
+    sin(angle)
+)
+
+sealed class HitResult(val hitPos: Vector2d) {
+    class Tile(hitPos: Vector2d, val hitType: HitType) : HitResult(hitPos)
+    class Entity(hitPos: Vector2d, val entity: dev.apollointhehouse.walker.entity.Entity) : HitResult(hitPos)
+}
+sealed interface HitType {
+    object Horizontal : HitType
+    object Vertical : HitType
 }
 
-fun raycast(initialPos: Vector2d, level: Level, angle: Double, depth: Int = 64): HitResult {
-    val (x, y) = initialPos
-    val dirX = cos(angle)
-    val dirY = sin(angle)
-    val grid = 64.0
-    val eps = 0.0001
+fun raycast(initialPos: Vector2d, level: Level, angle: Double, depth: Int = 64): HitResult? {
+    val grid = 64
 
-    // Horizontal grid lines (constant y)
-    var rayHX = x
-    var rayHY = y
-    var hDist = Double.MAX_VALUE
+    val dir = direction(angle)
 
-    if (dirY != 0.0) {
-        val yOffset = if (dirY > 0) grid else -grid
-        val xOffset = yOffset * (dirX / dirY)
+    var mapX = (initialPos.x / grid).toInt()
+    var mapY = (initialPos.y / grid).toInt()
 
-        rayHY = if (dirY > 0) (floor(y / grid) + 1) * grid
-        else floor(y / grid) * grid - eps
-        rayHX = x + (rayHY - y) * (dirX / dirY)
+    val deltaDistX = if (dir.x == 0.0) Double.MAX_VALUE else abs(grid / dir.x)
+    val deltaDistY = if (dir.y == 0.0) Double.MAX_VALUE else abs(grid / dir.y)
 
-        var dof = 0
-        while (dof < depth) {
-            val mapX = rayHX.toInt()
-            val mapY = rayHY.toInt()
-            if (mapX in 0..<level.mapX * level.size && mapY in 0..<level.mapY * level.size && level.get(mapX, mapY) == 1) break
-            rayHX += xOffset
-            rayHY += yOffset
-            dof++
-        }
-        hDist = initialPos.distance(rayHX, rayHY)
+    val stepX: Int
+    val stepY: Int
+
+    var sideDistX: Double
+    var sideDistY: Double
+
+    if (dir.x < 0) {
+        stepX = -1
+        sideDistX = (initialPos.x - mapX * grid) * (deltaDistX / grid)
+    } else {
+        stepX = 1
+        sideDistX = ((mapX + 1) * grid - initialPos.x) * (deltaDistX / grid)
     }
 
-    // Vertical grid lines (constant x)
-    var rayVX = x
-    var rayVY = y
-    var vDist = Double.MAX_VALUE
-
-    if (dirX != 0.0) {
-        val xOffset = if (dirX > 0) grid else -grid
-        val yOffset = xOffset * (dirY / dirX)
-
-        rayVX = if (dirX > 0) (floor(x / grid) + 1) * grid
-        else floor(x / grid) * grid - eps
-        rayVY = y + (rayVX - x) * (dirY / dirX)
-
-        var dof = 0
-        while (dof < depth) {
-            val mapX = rayVX.toInt()
-            val mapY = rayVY.toInt()
-            if (mapX in 0..<level.mapX * level.size && mapY in 0..<level.mapY * level.size && level.get(mapX, mapY) == 1) break
-            rayVX += xOffset
-            rayVY += yOffset
-            dof++
-        }
-        vDist = initialPos.distance(rayVX, rayVY)
+    if (dir.y < 0) {
+        stepY = -1
+        sideDistY = (initialPos.y - mapY * grid) * (deltaDistY / grid)
+    } else {
+        stepY = 1
+        sideDistY = ((mapY + 1) * grid - initialPos.y) * (deltaDistY / grid)
     }
 
-    return if (hDist < vDist) HitResult.Horizontal(Vector2d(rayHX, rayHY), hDist)
-    else HitResult.Vertical(Vector2d(rayVX, rayVY), vDist)
+    var sideHit: HitType
+    var currentDepth = 0
+
+    while (currentDepth < depth) {
+        if (sideDistX < sideDistY) {
+            sideDistX += deltaDistX
+            mapX += stepX
+            sideHit = HitType.Vertical
+        } else {
+            sideDistY += deltaDistY
+            mapY += stepY
+            sideHit = HitType.Horizontal
+        }
+
+        if (mapX !in 0..<level.mapX || mapY !in 0..<level.mapY) {
+            break
+        }
+
+        val tile = level.getRaw(mapX, mapY)
+
+        if (tile.entities.isNotEmpty()) {
+            val entity = tile.entities.first()
+            return HitResult.Entity(Vector2d(entity.x, entity.y), entity)
+        }
+
+        if (tile.type >= 1) {
+            val exactHitDistance = if (sideHit == HitType.Vertical) (sideDistX - deltaDistX) else (sideDistY - deltaDistY)
+            val hitX = initialPos.x + dir.x * exactHitDistance
+            val hitY = initialPos.y + dir.y * exactHitDistance
+            return HitResult.Tile(Vector2d(hitX, hitY), sideHit)
+        }
+
+        currentDepth++
+    }
+
+    return null
 }
