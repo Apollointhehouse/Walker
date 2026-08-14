@@ -44,8 +44,9 @@ fun raycast(initialPos: Vector2d, level: Level, angle: Double, depth: Int = 64):
     var mapX = (initialPos.x / grid).toInt()
     var mapY = (initialPos.y / grid).toInt()
 
-    val deltaDistX = if (dir.x == 0.0) Double.MAX_VALUE else abs(grid / dir.x)
-    val deltaDistY = if (dir.y == 0.0) Double.MAX_VALUE else abs(grid / dir.y)
+    val epsilon = 1e-9
+    val deltaDistX = if (abs(dir.x) < epsilon) Double.MAX_VALUE else abs(grid / dir.x)
+    val deltaDistY = if (abs(dir.y) < epsilon) Double.MAX_VALUE else abs(grid / dir.y)
 
     val stepX: Int
     val stepY: Int

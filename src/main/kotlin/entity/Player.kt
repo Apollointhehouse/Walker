@@ -83,8 +83,15 @@ class Player(
         dx += input.forward * addSpeedX
         dy += input.forward * addSpeedY
 
-        if (level.get((x + dx).toInt(), y.toInt()).type == 0 || level.get(x.toInt(), y.toInt()).type == 1) x += dx
-        if (level.get(x.toInt() , (y + dy).toInt()).type == 0 || level.get(x.toInt(), y.toInt()).type == 1) y += dy
+        val mapWidth = level.mapX * level.tileSize
+        val mapHeight = level.mapY * level.tileSize
+
+        if (x + dx >= 0.0 && x + dx < mapWidth.toDouble()) {
+            if (level.get((x + dx).toInt(), y.toInt()).type == 0) x += dx
+        }
+        if (y + dy >= 0.0 && y + dy < mapHeight.toDouble()) {
+            if (level.get(x.toInt(), (y + dy).toInt()).type == 0) y += dy
+        }
 
 //        logger.info("dx: %.2f, dy: %.2f".format(dx, dy))
 //        logger.info("x: %.2f, y: %.2f".format(x, y))
@@ -103,7 +110,7 @@ class Player(
             val lerpPos = oldPosition.lerp(position, deltaTime, Vector2d())
             val hitResult = raycast(lerpPos, level, rayAngle) ?: continue
 
-            val (hitPos) = hitResult
+            val hitPos = hitResult.hitPos
 
             when (hitResult) {
                 is HitResult.Tile -> when (hitResult.hitType) {
@@ -124,23 +131,25 @@ class Player(
                 Camera.end()
             }
 
+            if (Input.isKeyDown(GLFW.GLFW_KEY_K)) continue
+
             val deltaAngle = deltaAngle(lerpAngle, rayAngle)
             val dist = hitResult.hitPos.distance(lerpPos) * cos(deltaAngle)
 
-            var lineHeight = (level.size * 320) / dist
-            val texYStep = 32.0 / ((level.size * 320) / dist)
+            var lineHeight = (level.tileSize * Renderer.windowHeight / 2.0 * 1.25) / dist
+            val texYStep = 32.0 / ((level.tileSize * Renderer.windowHeight / 2.0 * 1.25) / dist)
             var texYOffset = 0.0
 
-            if (lineHeight > 320.0) {
-                texYOffset = (lineHeight - 320) / 2.0
-                lineHeight = 320.0
+            if (lineHeight > Renderer.windowHeight.toDouble()) {
+                texYOffset = (lineHeight - Renderer.windowHeight) / 2.0
+                lineHeight = Renderer.windowHeight.toDouble()
             }
 
-            val viewCenterY = 256.0
-            val lineOffset = (viewCenterY - lineHeight).toFloat() / 2.0
+            val viewCenterY = Renderer.windowHeight / 2.0
+            val lineOffset = (viewCenterY - lineHeight / 2.0)
 
-            val viewStartX = 512.0
-            val colWidth = (1024.0 - viewStartX) / count
+            val viewStartX = 0.0
+            val colWidth = Renderer.windowWidth.toDouble() / count
 
             val xLeft = (viewStartX + r * colWidth)
             val xRight = (viewStartX + (r + 1) * colWidth)
@@ -151,8 +160,7 @@ class Player(
 //            }
 
             val wallTexture = Textures.brick
-
-            val texY = texYStep * texYOffset
+            val texYStart = texYStep * texYOffset
             val texX = when (hitResult) {
                 is HitResult.Tile -> when (hitResult.hitType) {
                     is HitType.Horizontal -> ((hitPos.x % 64) + 64) % 64
@@ -161,34 +169,46 @@ class Player(
                 is HitResult.Entity -> ((hitPos.x % 64) + 64) % 64
             } / 2.0
 
-            Renderer.draw(GL_POINTS) {
-                for (screenX in xLeft.toInt()..<xRight.toInt()) {
-                    var currentTexY = texY
-                    for (y in 0..<lineHeight.toInt()) {
-                        val pixelColor = wallTexture[texX.toInt(), currentTexY.toInt()]
+            val shade = when (hitResult) {
+                is HitResult.Tile -> when (hitResult.hitType) {
+                    is HitType.Horizontal -> 0.9
+                    is HitType.Vertical   -> 0.7
+                }
+                is HitResult.Entity -> 0.5
+            }
 
-                        val shade = when (hitResult) {
-                            is HitResult.Tile -> when (hitResult.hitType) {
-                                is HitType.Horizontal -> 0.9
-                                is HitType.Vertical   -> 0.7
-                            }
-                            is HitResult.Entity -> 0.5
+            Renderer.draw(GL_LINES) {
+                for (screenX in xLeft.toInt()..<xRight.toInt()) {
+                    var currentTexY = texYStart
+                    var y = 0
+                    while (y < lineHeight.toInt()) {
+                        val pixelColor =
+                            wallTexture[texX.toInt().coerceIn(0, 31), currentTexY.toInt().coerceIn(0, 31)]
+                        val startY = y
+
+                        var countSame = 1
+                        var tempTexY = currentTexY + texYStep
+                        while (y + countSame < lineHeight.toInt() &&
+                            wallTexture[texX.toInt().coerceIn(0, 31), tempTexY.toInt().coerceIn(0, 31)] == pixelColor
+                        ) {
+                            countSame++
+                            tempTexY += texYStep
                         }
 
                         when (pixelColor) {
-                            0    -> glColor3d(0.0,   0.0,   0.0  )
-                            1    -> glColor3d(shade, shade, shade)
-                            2    -> glColor3d(shade, 0.0,   0.0  )
-                            3    -> glColor3d(0.0,   shade, 0.0  )
-                            4    -> glColor3d(0.0,   0.0,   shade)
-                            else -> glColor3d(0.0,   0.0,   0.0  )
+                            0 -> glColor3d(0.0, 0.0, 0.0)
+                            1 -> glColor3d(shade, shade, shade)
+                            2 -> glColor3d(shade, 0.0, 0.0)
+                            3 -> glColor3d(0.0, shade, 0.0)
+                            4 -> glColor3d(0.0, 0.0, shade)
+                            else -> glColor3d(0.0, 0.0, 0.0)
                         }
 
+                        Renderer.addVertex(screenX.toDouble(), startY + lineOffset)
+                        Renderer.addVertex(screenX.toDouble(), startY + countSame + lineOffset)
 
-                        glPointSize(8f)
-                        Renderer.addVertex(screenX.toDouble(), y + lineOffset)
-
-                        currentTexY += texYStep
+                        y += countSame
+                        currentTexY = tempTexY
                     }
                 }
             }
@@ -226,7 +246,7 @@ class Player(
         private const val FOV = 80.0
         private const val PRECISION = 0.125
 
-        private const val SPEED = 6.0
-        private const val FRICTION = 0.5
+        private const val SPEED = 6.5
+        private const val FRICTION = 0.6
     }
 }

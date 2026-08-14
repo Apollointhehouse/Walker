@@ -8,19 +8,21 @@ import org.lwjgl.glfw.GLFWErrorCallback
 import org.lwjgl.glfw.GLFWVidMode
 import org.lwjgl.opengl.GL
 import org.lwjgl.opengl.GL11.*
-import org.lwjgl.opengl.GL41.glBindVertexArray
+import org.lwjgl.opengl.GLUtil.setupDebugMessageCallback
 import org.lwjgl.system.MemoryStack.stackPush
 import org.lwjgl.system.MemoryUtil.NULL
 import java.nio.IntBuffer
 
 object Renderer {
     private val drawables = mutableListOf<Drawable>()
-
     var window: Long = 0
         private set
 
-    private var vao: Int = 0
-    private var vbo: Int = 0
+    var windowWidth: Int = 1024
+        private set
+    var windowHeight: Int = 512
+        private set
+
     fun init() {
         GLFWErrorCallback.createPrint(System.err).set()
 
@@ -30,6 +32,7 @@ object Renderer {
         glfwDefaultWindowHints()
         glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE)
         glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE)
+        glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE)
 
         // Create the window
         window = glfwCreateWindow(1024, 512, "Hello World!", NULL, NULL)
@@ -59,6 +62,8 @@ object Renderer {
         glfwMakeContextCurrent(window)
         GL.createCapabilities()
 
+        setupDebugMessageCallback()
+
         stackPush().use { stack ->
             val fbWidth = stack.mallocInt(1)
             val fbHeight = stack.mallocInt(1)
@@ -68,6 +73,12 @@ object Renderer {
 
         glfwSetFramebufferSizeCallback(window) { _, width, height ->
             glViewport(0, 0, width, height)
+            windowWidth = width
+            windowHeight = height
+            glMatrixMode(GL_PROJECTION)
+            glLoadIdentity()
+            glOrtho(0.0, width.toDouble(), 0.0, height.toDouble(), -1.0, 1.0)
+            glMatrixMode(GL_MODELVIEW)
         }
 
         // Enable v-sync
@@ -97,9 +108,6 @@ object Renderer {
         for (drawable in drawables) {
             drawable.render(deltaTime)
         }
-
-        glBindVertexArray(vao)
-        glDrawArrays(GL_TRIANGLE_FAN, 0, 4)
 
         glfwSwapBuffers(window)
 
