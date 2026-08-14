@@ -33,7 +33,7 @@ class JsonLevel(val model: JsonLevelModel) : Level {
         val col = i % mapX
         val row = i / mapX
 
-        if (i >= size || i < 0) return LevelTile(this, Vector2i(col, row), 0)
+        if (i !in 0..<size) return LevelTile(this, Vector2i(col, row), 0)
 
         return getRaw(col, row)
     }

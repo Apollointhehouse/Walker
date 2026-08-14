@@ -8,7 +8,6 @@ import org.lwjgl.glfw.GLFWErrorCallback
 import org.lwjgl.glfw.GLFWVidMode
 import org.lwjgl.opengl.GL
 import org.lwjgl.opengl.GL11.*
-import org.lwjgl.opengl.GLUtil.setupDebugMessageCallback
 import org.lwjgl.system.MemoryStack.stackPush
 import org.lwjgl.system.MemoryUtil.NULL
 import java.nio.IntBuffer
@@ -35,7 +34,7 @@ object Renderer {
         glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE)
 
         // Create the window
-        window = glfwCreateWindow(1024, 512, "Hello World!", NULL, NULL)
+        window = glfwCreateWindow(1024, 512, "Walker", NULL, NULL)
         if (window == NULL) throw RuntimeException("Failed to create the GLFW window")
 
         // Setup a key callback
@@ -62,7 +61,7 @@ object Renderer {
         glfwMakeContextCurrent(window)
         GL.createCapabilities()
 
-        setupDebugMessageCallback()
+//        setupDebugMessageCallback()
 
         stackPush().use { stack ->
             val fbWidth = stack.mallocInt(1)
@@ -124,7 +123,10 @@ object Renderer {
 
     inline fun draw(glMode: Int, block: () -> Unit) {
         begin(glMode)
-        block()
-        end()
+        try {
+            block()
+        } finally {
+            end()
+        }
     }
 }

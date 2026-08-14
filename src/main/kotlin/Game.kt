@@ -19,6 +19,8 @@ object Game : Tickable {
             Renderer.init()
             loop()
             Renderer.cleanup()
+        } catch (e: Exception) {
+            e.printStackTrace()
         } finally {
             // Terminate GLFW and free the error callback
             glfwTerminate()
