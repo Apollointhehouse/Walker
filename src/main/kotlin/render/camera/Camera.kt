@@ -1,4 +1,4 @@
-package dev.apollointhehouse.walker.render
+package dev.apollointhehouse.walker.render.camera
 
 import dev.apollointhehouse.walker.Tickable
 import org.joml.Vector2dc

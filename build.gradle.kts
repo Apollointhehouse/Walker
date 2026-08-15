@@ -45,7 +45,8 @@ dependencies {
     // LWJGL
     implementation(platform("org.lwjgl:lwjgl-bom:${libs.versions.lwjglVersion.get()}"))
     implementation(libs.bundles.lwjgl)
-    implementation(libs.joml)
+    implementation(libs.bundles.joml)
+
     implementation("org.lwjgl:lwjgl::$lwjglNatives")
     implementation("org.lwjgl:lwjgl-assimp::$lwjglNatives")
     implementation("org.lwjgl:lwjgl-glfw::$lwjglNatives")

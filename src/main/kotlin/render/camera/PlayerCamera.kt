@@ -1,18 +1,15 @@
-package dev.apollointhehouse.walker.render
+package dev.apollointhehouse.walker.render.camera
 
-import dev.apollointhehouse.walker.Game
-import org.joml.Vector2d
+import dev.apollointhehouse.walker.entity.Player
+import dev.apollointhehouse.walker.render.Renderer
 import org.joml.Vector2dc
 import org.lwjgl.opengl.GL11.*
 
-class PlayerCamera : Camera {
-    override val fov: Double = 60.0
-
-    private fun cameraPos(deltaTime: Double): Vector2d =
-        Game.player.oldPosition.lerp(Game.player.position, deltaTime, Vector2d())
+class PlayerCamera(private val player: Player) : Camera {
+    override val fov: Double = 80.0
 
     override fun apply(deltaTime: Double, block: () -> Unit) {
-        val lerpPos = cameraPos(deltaTime)
+        val lerpPos = getPosition(deltaTime)
 
         glPushMatrix()
         glTranslated(Renderer.windowWidth / 2.0 - lerpPos.x(), Renderer.windowHeight / 2.0 - lerpPos.y(), 0.0)
@@ -28,7 +25,7 @@ class PlayerCamera : Camera {
     }
 
     override fun getPosition(deltaTime: Double): Vector2dc =
-        Game.player.oldPosition.lerp(Game.player.position, deltaTime, Vector2d())
+        player.getPos(deltaTime)
 
     override fun tick() {}
 }

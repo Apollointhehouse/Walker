@@ -6,6 +6,7 @@ import dev.apollointhehouse.walker.level.Level
 import dev.apollointhehouse.walker.level.tile.TileAir
 import dev.apollointhehouse.walker.render.RenderUtils
 import dev.apollointhehouse.walker.utils.math.AABB2d
+import dev.apollointhehouse.walker.utils.math.AABB2dc
 import dev.apollointhehouse.walker.utils.math.HitResult
 import dev.apollointhehouse.walker.utils.math.fixAngle
 import dev.apollointhehouse.walker.utils.math.raycast
@@ -13,29 +14,29 @@ import org.joml.Vector2d
 import org.lwjgl.glfw.GLFW
 
 abstract class Mob(
-    override val position: Vector2d
+    override val pos: Vector2d
 ) : Entity {
-    val oldPosition = Vector2d(position)
-    val velocity = Vector2d()
-    val oldVelocity = Vector2d(velocity)
+    override val oldPos = Vector2d(pos)
+    override val velocity = Vector2d()
+    override val oldVelocity = Vector2d(velocity)
 
     override lateinit var level: Level
 
-    abstract override val bb: AABB2d
+    abstract override val bb: AABB2dc
 
     override var x: Double
-        get() = position.x()
-        protected set(value) { position.set(value, y) }
+        get() = pos.x()
+        protected set(value) { pos.set(value, y) }
     override var y: Double
-        get() = position.y()
-        protected set(value) { position.set(x, value) }
+        get() = pos.y()
+        protected set(value) { pos.set(x, value) }
 
     override var xo: Double
-        get() = oldPosition.x()
-        protected set(value) { oldPosition.set(value, yo) }
+        get() = oldPos.x()
+        protected set(value) { oldPos.set(value, yo) }
     override var yo: Double
-        get() = oldPosition.y()
-        protected set(value) { oldPosition.set(xo, value) }
+        get() = oldPos.y()
+        protected set(value) { oldPos.set(xo, value) }
 
     override var dx: Double
         get() = velocity.x()
@@ -54,7 +55,7 @@ abstract class Mob(
     override var angle: Double = 2 * Math.PI
         protected set
 
-    var angleO: Double = angle
+    override var angleO: Double = angle
         protected set
 
     protected fun captureOldState() {
@@ -65,32 +66,37 @@ abstract class Mob(
         angleO = angle
     }
 
-    protected fun resolveAxis(current: Double, delta: Double, canMove: (Double) -> Boolean): Double {
+    protected fun resolveAxis(
+        current: Double,
+        delta: Double,
+        testBB: AABB2d,
+        canMove: (Double, AABB2d) -> Boolean
+    ): Double {
         if (delta == 0.0) return current
-        if (canMove(current + delta)) return current + delta
+        if (canMove(current + delta, testBB)) return current + delta
 
         var lo = 0.0
         var hi = delta
         repeat(25) {
             val mid = (lo + hi) / 2.0
-            if (canMove(current + mid)) lo = mid else hi = mid
+            if (canMove(current + mid, testBB)) lo = mid else hi = mid
         }
         return current + lo
     }
 
-    protected fun canMoveTo(testX: Double, testY: Double): Boolean {
+    protected fun canMoveTo(testX: Double, testY: Double, testBB: AABB2d): Boolean {
         val mapWidth = level.mapX * level.tileSize
         val mapHeight = level.mapY * level.tileSize
 
-        val testBB = bb + Vector2d(testX, testY)
+        bb.translate(testX, testY, testBB)
 
-        if (testBB.min.x() < 0.0 || testBB.max.x() >= mapWidth.toDouble()) return false
-        if (testBB.min.y() < 0.0 || testBB.max.y() >= mapHeight.toDouble()) return false
+        if (testBB.minX < 0.0 || testBB.maxY >= mapWidth.toDouble()) return false
+        if (testBB.minY < 0.0 || testBB.maxY >= mapHeight.toDouble()) return false
 
-        val minTileX = testBB.min.x().toInt() / level.tileSize
-        val maxTileX = testBB.max.x().toInt() / level.tileSize
-        val minTileY = testBB.min.y().toInt() / level.tileSize
-        val maxTileY = testBB.max.y().toInt() / level.tileSize
+        val minTileX = testBB.minX.toInt() / level.tileSize
+        val maxTileX = testBB.maxX.toInt() / level.tileSize
+        val minTileY = testBB.minY.toInt() / level.tileSize
+        val maxTileY = testBB.maxY.toInt() / level.tileSize
 
         for (tileX in minTileX..maxTileX) {
             for (tileY in minTileY..maxTileY) {
@@ -98,12 +104,15 @@ abstract class Mob(
             }
         }
 
+        testBB.setMin(0.0, 0.0)
+        testBB.setMax(0.0, 0.0)
+
         return true
     }
 
     protected fun moveWithCollision(friction: Double) {
-        x = resolveAxis(x, dx) { testX -> canMoveTo(testX, y) }
-        y = resolveAxis(y, dy) { testY -> canMoveTo(x, testY) }
+        x = resolveAxis(x, dx, AABB2d()) { testX, testBB -> canMoveTo(testX, y, testBB) }
+        y = resolveAxis(y, dy, AABB2d()) { testY, testBB -> canMoveTo(x, testY, testBB) }
 
         dx *= friction
         dy *= friction
@@ -112,7 +121,7 @@ abstract class Mob(
     protected fun renderDebugBB(deltaTime: Double, color: Triple<Float, Float, Float>) {
         if (!Input.isKeyDown(GLFW.GLFW_KEY_K)) return
 
-        val lerpPos = oldPosition.lerp(position, deltaTime, Vector2d())
+        val lerpPos = getPos(deltaTime)
 
         Game.camera.apply(deltaTime) {
             org.lwjgl.opengl.GL11.glColor3f(color.first, color.second, color.third)
@@ -134,9 +143,9 @@ abstract class Mob(
             val t = if (rayCount == 1) 0.5 else r.toDouble() / (rayCount - 1)
             val rayAngle = fixAngle(angle - fov / 2.0 + fov * t)
 
-            val hit = raycast(position, level, rayAngle, ignore = this, depth = depth)
+            val hit = raycast(pos, level, rayAngle, ignore = this, depth = depth)
             if (hit is HitResult.EntityHit) {
-                hits.add(hit.entity to hit.hitPos.distance(position))
+                hits.add(hit.entity to hit.hitPos.distance(pos))
             }
         }
 

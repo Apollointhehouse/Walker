@@ -16,7 +16,7 @@ fun lerpAngle(a: Double, b: Double, t: Double): Double {
 }
 
 fun deltaAngle(a: Double, b: Double): Double =
-    ((a - b % Math.TAU) + Math.TAU) % Math.TAU
+    (((a - b) % Math.TAU) + Math.TAU) % Math.TAU
 
 fun angleRange(angle: Double, min: Double, max: Double): Double =
     ((max - min) / 2.0) * (cos(angle) - (-1.0)) + min

@@ -1,6 +1,7 @@
 [versions]
 lwjglVersion = "3.4.2"
 jomlVersion = "1.10.9"
+jomlPrimitivesVersion = "1.11.1"
 log4j = "2.26.1"
 log4j-api-kotlin = "1.5.0"
 jackson-databind = "2.19.2"
@@ -18,6 +19,7 @@ lwjgl-sdl = { group = "org.lwjgl", name = "lwjgl-sdl", version.ref = "lwjglVersi
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinx-serialization-json" }
 
 joml = { group = "org.joml", name = "joml", version.ref = "jomlVersion" }
+joml-primitives = { group = "org.allaymc", name = "joml-primitives", version.ref = "jomlPrimitivesVersion" }
 
 log4j-api = { group = "org.apache.logging.log4j", name = "log4j-api", version.ref = "log4j" }
 log4j-api-kotlin = { group = "org.apache.logging.log4j", name = "log4j-api-kotlin", version.ref = "log4j-api-kotlin" }
@@ -27,3 +29,4 @@ jackson-databind = { group = "com.fasterxml.jackson.core", name = "jackson-datab
 [bundles]
 lwjgl = ["lwjgl", "lwjgl-assimp", "lwjgl-glfw", "lwjgl-openal", "lwjgl-opengl", "lwjgl-stb", "lwjgl-sdl"]
 log4j = ["log4j-api", "log4j-core", "log4j-api-kotlin"]
+joml = ["joml", "joml-primitives"]

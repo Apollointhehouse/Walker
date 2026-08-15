@@ -8,16 +8,19 @@ import dev.apollointhehouse.walker.render.Renderer
 import dev.apollointhehouse.walker.render.texture.Textures
 import dev.apollointhehouse.walker.utils.math.*
 import org.joml.Vector2d
+import org.joml.minus
 import org.joml.plus
 import org.joml.times
 import org.lwjgl.glfw.GLFW
 import org.lwjgl.opengl.GL11.*
+import kotlin.math.atan2
 import kotlin.math.cos
+import kotlin.math.tan
 
 class Player(
     position: Vector2d = Vector2d(300.0, 300.0)
 ) : Mob(position) {
-    override val bb: AABB2d = AABB2d(Vector2d(-16.0, -16.0), Vector2d(16.0, 16.0))
+    override val bb: AABB2dc = AABB2d(Vector2d(-16.0, -16.0), Vector2d(16.0, 16.0))
 
     private val direction: Vector2d
         get() = direction(angle)
@@ -40,20 +43,23 @@ class Player(
         dx += input.forward * addSpeedX
         dy += input.forward * addSpeedY
 
-        x = resolveAxis(x, dx) { testX -> canMoveTo(testX, y) }
-        y = resolveAxis(y, dy) { testY -> canMoveTo(x, testY) }
+        val testBB = AABB2d()
+        x = resolveAxis(x, dx, testBB) { testX, testBB -> canMoveTo(testX, y, testBB) }
+        y = resolveAxis(y, dy, testBB) { testY, testBB -> canMoveTo(x, testY, testBB) }
 
         dx *= FRICTION
         dy *= FRICTION
     }
 
-    private fun drawRays(count: Int, precision: Double, deltaTime: Double) {
+    private fun render3d(deltaTime: Double) {
+        val count = (Game.camera.fov / PRECISION).toInt()
+
         for (r in 0..<count) {
-            val lerpAngle = lerpAngle(angleO, angle, deltaTime)
-            val rawAngle = lerpAngle - (r - count / 2.0 + 0.5) * precision
+            val lerpAngle = getAngle(deltaTime)
+            val rawAngle = lerpAngle - (r - count / 2.0 + 0.5) * Math.toRadians(PRECISION)
             val rayAngle = fixAngle(rawAngle)
 
-            val lerpPos = oldPosition.lerp(position, deltaTime, Vector2d())
+            val lerpPos = getPos(deltaTime)
             val hitResult = raycast(lerpPos, level, rayAngle, ignore = this) ?: continue
 
             val hitPos = hitResult.hitPos
@@ -118,15 +124,14 @@ class Player(
                 }
                 is EntityHit -> {
                     val entity = hitResult.entity
-                    val entityPos = Vector2d(entity.x, entity.y)
+                    val entityPos = entity.getPos(deltaTime)
                     val dist = lerpPos.distance(entityPos)
-                    val angleToEntity = kotlin.math.atan2(entityPos.y - lerpPos.y, entityPos.x - lerpPos.x)
 
-                    var deltaA = fixAngle(rayAngle - angleToEntity)
-                    if (deltaA > Math.PI) deltaA -= Math.TAU // wrap to (-PI, PI]
+                    val dir = entityPos - lerpPos
+                    val angleToEntity = atan2(dir.x, dir.y)
 
-                    val offset = dist * kotlin.math.tan(deltaA)
-                    val halfWidth = entity.bb.max.x // assumes symmetric bb like Player's (-16..16)
+                    val offset = dist * tan(deltaAngle(rayAngle, angleToEntity))
+                    val halfWidth = entity.bb.maxX()
 
                     val normalized = (offset / halfWidth).coerceIn(-1.0, 1.0)
                     (normalized * 0.5 + 0.5) * 64.0
@@ -183,8 +188,8 @@ class Player(
         renderDebugBB(deltaTime, Triple(1.0f, 1.0f, 0.0f))
 
         if (Input.isKeyDown(GLFW.GLFW_KEY_K)) {
-            val lerpPos = oldPosition.lerp(position, deltaTime, Vector2d())
-            val lerpVel = oldVelocity.lerp(velocity, deltaTime, Vector2d())
+            val lerpPos = getPos(deltaTime)
+            val lerpVel = getVelocity(deltaTime)
 
             Game.camera.apply(deltaTime) {
                 glColor3f(1.0f, 1.0f, 0.0f)
@@ -196,8 +201,7 @@ class Player(
             }
         }
 
-        val rayCount = (Game.camera.fov / PRECISION).toInt()
-        drawRays(rayCount, Math.toRadians(PRECISION), deltaTime)
+        render3d(deltaTime)
     }
 
     companion object {

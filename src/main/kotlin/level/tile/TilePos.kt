@@ -16,8 +16,8 @@ class TilePos(
 //
 //        return level.entities.filter { entity ->
 //            val eBB = entity.bb + entity.position
-//            eBB.min.x() < tileMax.x() && eBB.max.x() > tileMin.x() &&
-//                    eBB.min.y() < tileMax.y() && eBB.max.y() > tileMin.y()
+//            eBB.minX() < tileMax.x() && eBB.maxX() > tileMin.x() &&
+//                    eBB.minY() < tileMax.y() && eBB.maxY() > tileMin.y()
 //        }
 //    }
 }

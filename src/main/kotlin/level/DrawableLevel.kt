@@ -37,9 +37,9 @@ class DrawableLevel(player: Player, private val level: Level) : Level by level, 
         val tileMax = Vector2d(tileMin.x() + level.tileSize, tileMin.y() + level.tileSize)
 
         return entities.filter { entity ->
-            val eBB = entity.bb + entity.position
-            eBB.min.x() < tileMax.x() && eBB.max.x() > tileMin.x() &&
-                    eBB.min.y() < tileMax.y() && eBB.max.y() > tileMin.y()
+            val eBB = entity.bb + entity.pos
+            eBB.minX() < tileMax.x() && eBB.maxX() > tileMin.x() &&
+                    eBB.minY() < tileMax.y() && eBB.maxY() > tileMin.y()
         }
     }
 

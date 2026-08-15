@@ -4,6 +4,7 @@ import dev.apollointhehouse.walker.level.Level
 import dev.apollointhehouse.walker.utils.math.AABB2d
 import dev.apollointhehouse.walker.utils.math.fixAngle
 import org.joml.Vector2d
+import org.joml.minus
 import kotlin.math.atan2
 import kotlin.random.Random
 
@@ -30,7 +31,7 @@ class Monster(position: Vector2d = Vector2d(300.0, 300.0), override var level: L
     }
 
     private fun chase(player: Player) {
-        val toPlayer = Vector2d(player.x - x, player.y - y)
+        val toPlayer = player.pos - pos
         val dist = toPlayer.length()
         if (dist < 1e-6) return
 
