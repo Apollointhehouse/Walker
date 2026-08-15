@@ -35,5 +35,5 @@ interface Entity : Drawable, Tickable {
 
     val bb: AABB2dc
 
-    val level: Level?
+    var level: Level
 }

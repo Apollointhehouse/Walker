@@ -8,5 +8,6 @@ interface Camera : Tickable {
 
     fun apply(deltaTime: Double, block: () -> Unit)
 
-    fun getPosition(deltaTime: Double): Vector2dc
+    fun getPos(deltaTime: Double): Vector2dc
+    fun getAngle(deltaTime: Double): Double
 }

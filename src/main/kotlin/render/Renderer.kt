@@ -1,7 +1,7 @@
 package dev.apollointhehouse.walker.render
 
 import dev.apollointhehouse.walker.input.Input
-import org.joml.Vector2d
+import org.joml.Vector2dc
 import org.lwjgl.glfw.Callbacks.glfwFreeCallbacks
 import org.lwjgl.glfw.GLFW.*
 import org.lwjgl.glfw.GLFWErrorCallback
@@ -116,7 +116,7 @@ object Renderer {
 
     @IgnorableReturnValue
     fun addDrawable(drawable: Drawable): Boolean = drawables.add(drawable)
-    fun addVertex(vert: Vector2d) = glVertex2d(vert.x, vert.y)
+    fun addVertex(vert: Vector2dc) = glVertex2d(vert.x(), vert.y())
     fun addVertex(x: Double, y: Double) = glVertex2d(x, y)
 
     fun begin(glMode: Int) = glBegin(glMode)

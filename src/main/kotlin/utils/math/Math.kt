@@ -4,9 +4,12 @@ import dev.apollointhehouse.walker.entity.Entity
 import dev.apollointhehouse.walker.level.Level
 import dev.apollointhehouse.walker.level.tile.TileAir
 import org.joml.Vector2d
+import org.joml.Vector2dc
 import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.sin
+import kotlin.reflect.KClass
+import kotlin.reflect.full.isSubclassOf
 
 fun lerpAngle(a: Double, b: Double, t: Double): Double {
     var delta = (b - a) % Math.TAU
@@ -38,13 +41,16 @@ sealed interface HitType {
     object Vertical : HitType
 }
 
-fun raycast(initialPos: Vector2d, level: Level, angle: Double, ignore: Entity? = null, depth: Int = 64): HitResult? {
+inline fun <reified T : Entity> raycast(initialPos: Vector2dc, level: Level, angle: Double, depth: Int = 64): HitResult? =
+    raycast(initialPos, level, angle, T::class, depth)
+
+fun raycast(initialPos: Vector2dc, level: Level, angle: Double, ignore: KClass<out Entity>? = null, depth: Int = 64): HitResult? {
     val grid = 64
 
     val dir = direction(angle)
 
-    var mapX = (initialPos.x / grid).toInt()
-    var mapY = (initialPos.y / grid).toInt()
+    var mapX = (initialPos.x() / grid).toInt()
+    var mapY = (initialPos.y() / grid).toInt()
 
     val epsilon = 1e-9
     val deltaDistX = if (abs(dir.x) < epsilon) Double.MAX_VALUE else abs(grid / dir.x)
@@ -58,18 +64,18 @@ fun raycast(initialPos: Vector2d, level: Level, angle: Double, ignore: Entity? =
 
     if (dir.x < 0) {
         stepX = -1
-        sideDistX = (initialPos.x - mapX * grid) * (deltaDistX / grid)
+        sideDistX = (initialPos.x() - mapX * grid) * (deltaDistX / grid)
     } else {
         stepX = 1
-        sideDistX = ((mapX + 1) * grid - initialPos.x) * (deltaDistX / grid)
+        sideDistX = ((mapX + 1) * grid - initialPos.x()) * (deltaDistX / grid)
     }
 
     if (dir.y < 0) {
         stepY = -1
-        sideDistY = (initialPos.y - mapY * grid) * (deltaDistY / grid)
+        sideDistY = (initialPos.y() - mapY * grid) * (deltaDistY / grid)
     } else {
         stepY = 1
-        sideDistY = ((mapY + 1) * grid - initialPos.y) * (deltaDistY / grid)
+        sideDistY = ((mapY + 1) * grid - initialPos.y()) * (deltaDistY / grid)
     }
 
     var sideHit: HitType
@@ -94,15 +100,17 @@ fun raycast(initialPos: Vector2d, level: Level, angle: Double, ignore: Entity? =
         val tileType = level.getType(tilePos)
         val entities = level.getEntities(tilePos)
 
-        val hitEntity = entities.firstOrNull { it !== ignore }
+        val hitEntity = entities.firstOrNull {
+            ignore == null || !it::class.isSubclassOf(ignore)
+        }
         if (hitEntity != null) {
             return HitResult.EntityHit(Vector2d(hitEntity.x, hitEntity.y), hitEntity)
         }
 
         if (tileType !is TileAir) {
             val exactHitDistance = if (sideHit == HitType.Vertical) (sideDistX - deltaDistX) else (sideDistY - deltaDistY)
-            val hitX = initialPos.x + dir.x * exactHitDistance
-            val hitY = initialPos.y + dir.y * exactHitDistance
+            val hitX = initialPos.x() + dir.x * exactHitDistance
+            val hitY = initialPos.y() + dir.y * exactHitDistance
             return HitResult.TileHit(Vector2d(hitX, hitY), sideHit)
         }
 

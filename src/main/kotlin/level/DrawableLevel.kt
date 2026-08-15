@@ -30,6 +30,7 @@ class DrawableLevel(player: Player, private val level: Level) : Level by level, 
     fun addEntity(entity: Entity) {
         Renderer.addDrawable(entity)
         entities.add(entity)
+        entity.level = this
     }
 
     override fun getEntities(tilePos: TilePosc): List<Entity> {

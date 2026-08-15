@@ -6,6 +6,7 @@ import dev.apollointhehouse.walker.level.DrawableLevel
 import dev.apollointhehouse.walker.level.JsonLevel
 import dev.apollointhehouse.walker.render.camera.PlayerCamera
 import dev.apollointhehouse.walker.render.Renderer
+import dev.apollointhehouse.walker.render.Level3DRenderer
 import org.joml.Vector2d
 import org.lwjgl.glfw.GLFW.glfwSetErrorCallback
 import org.lwjgl.glfw.GLFW.glfwTerminate
@@ -17,7 +18,7 @@ object Game : Tickable {
     val level = DrawableLevel(player, JsonLevel.load("level.json"))
 
     fun run() {
-        player.level = level
+        Renderer.addDrawable(Level3DRenderer(camera, level))
 
         level.addEntity(Monster(Vector2d(player.pos), level))
 

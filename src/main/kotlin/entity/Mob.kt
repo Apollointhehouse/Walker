@@ -143,7 +143,7 @@ abstract class Mob(
             val t = if (rayCount == 1) 0.5 else r.toDouble() / (rayCount - 1)
             val rayAngle = fixAngle(angle - fov / 2.0 + fov * t)
 
-            val hit = raycast(pos, level, rayAngle, ignore = this, depth = depth)
+            val hit = raycast<Player>(pos, level, rayAngle, depth = depth)
             if (hit is HitResult.EntityHit) {
                 hits.add(hit.entity to hit.hitPos.distance(pos))
             }

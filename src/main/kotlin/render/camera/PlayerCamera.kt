@@ -9,7 +9,7 @@ class PlayerCamera(private val player: Player) : Camera {
     override val fov: Double = 80.0
 
     override fun apply(deltaTime: Double, block: () -> Unit) {
-        val lerpPos = getPosition(deltaTime)
+        val lerpPos = getPos(deltaTime)
 
         glPushMatrix()
         glTranslated(Renderer.windowWidth / 2.0 - lerpPos.x(), Renderer.windowHeight / 2.0 - lerpPos.y(), 0.0)
@@ -24,8 +24,8 @@ class PlayerCamera(private val player: Player) : Camera {
         }
     }
 
-    override fun getPosition(deltaTime: Double): Vector2dc =
-        player.getPos(deltaTime)
+    override fun getPos(deltaTime: Double): Vector2dc = player.getPos(deltaTime)
+    override fun getAngle(deltaTime: Double): Double = player.getAngle(deltaTime)
 
     override fun tick() {}
 }
