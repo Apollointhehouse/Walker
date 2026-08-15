@@ -1,6 +1,8 @@
 package dev.apollointhehouse.walker.utils.math
 
+import dev.apollointhehouse.walker.entity.Entity
 import dev.apollointhehouse.walker.level.Level
+import dev.apollointhehouse.walker.level.tile.TileAir
 import org.joml.Vector2d
 import kotlin.math.abs
 import kotlin.math.cos
@@ -28,15 +30,15 @@ fun direction(angle: Double) = Vector2d(
 )
 
 sealed class HitResult(val hitPos: Vector2d) {
-    class Tile(hitPos: Vector2d, val hitType: HitType) : HitResult(hitPos)
-    class Entity(hitPos: Vector2d, val entity: dev.apollointhehouse.walker.entity.Entity) : HitResult(hitPos)
+    class TileHit(hitPos: Vector2d, val hitType: HitType) : HitResult(hitPos)
+    class EntityHit(hitPos: Vector2d, val entity: Entity) : HitResult(hitPos)
 }
 sealed interface HitType {
     object Horizontal : HitType
     object Vertical : HitType
 }
 
-fun raycast(initialPos: Vector2d, level: Level, angle: Double, depth: Int = 64): HitResult? {
+fun raycast(initialPos: Vector2d, level: Level, angle: Double, ignore: Entity? = null, depth: Int = 64): HitResult? {
     val grid = 64
 
     val dir = direction(angle)
@@ -88,18 +90,20 @@ fun raycast(initialPos: Vector2d, level: Level, angle: Double, depth: Int = 64):
             break
         }
 
-        val tile = level.getRaw(mapX, mapY)
+        val tilePos = level.get(mapX, mapY)
+        val tileType = level.getType(tilePos)
+        val entities = level.getEntities(tilePos)
 
-        if (tile.entities.isNotEmpty()) {
-            val entity = tile.entities.first()
-            return HitResult.Entity(Vector2d(entity.x, entity.y), entity)
+        val hitEntity = entities.firstOrNull { it !== ignore }
+        if (hitEntity != null) {
+            return HitResult.EntityHit(Vector2d(hitEntity.x, hitEntity.y), hitEntity)
         }
 
-        if (tile.type >= 1) {
+        if (tileType !is TileAir) {
             val exactHitDistance = if (sideHit == HitType.Vertical) (sideDistX - deltaDistX) else (sideDistY - deltaDistY)
             val hitX = initialPos.x + dir.x * exactHitDistance
             val hitY = initialPos.y + dir.y * exactHitDistance
-            return HitResult.Tile(Vector2d(hitX, hitY), sideHit)
+            return HitResult.TileHit(Vector2d(hitX, hitY), sideHit)
         }
 
         currentDepth++

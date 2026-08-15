@@ -5,6 +5,7 @@ repositories {
 plugins {
     kotlin("jvm") version "2.4.0"
     kotlin("plugin.serialization") version "2.3.20"
+    id("com.gradleup.shadow") version "9.6.1"
     application
 }
 group = "dev.apollointhehouse.walker"
@@ -70,7 +71,7 @@ kotlin {
     }
 
     compilerOptions {
-        freeCompilerArgs.addAll("-Xcollection-literals", "-Xname-based-destructuring=complete")
+        freeCompilerArgs.addAll("-Xcollection-literals", "-Xname-based-destructuring=complete", "-Xcontext-sensitive-resolution", "-Xreturn-value-checker=full")
     }
 }
 

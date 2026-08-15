@@ -18,6 +18,7 @@ open class Shader {
     protected val uniformLocations: MutableMap<String, Int> = mutableMapOf()
     protected val uniformBlockLocations: MutableMap<String, Int> = mutableMapOf()
 
+    @IgnorableReturnValue
     fun compile(folder: ShaderProvider, name: String): Shader {
         if (!this.supported) return this
 

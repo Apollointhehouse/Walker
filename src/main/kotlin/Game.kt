@@ -1,26 +1,33 @@
 package dev.apollointhehouse.walker
 
+import dev.apollointhehouse.walker.entity.Monster
 import dev.apollointhehouse.walker.entity.Player
 import dev.apollointhehouse.walker.level.DrawableLevel
 import dev.apollointhehouse.walker.level.JsonLevel
+import dev.apollointhehouse.walker.render.PlayerCamera
 import dev.apollointhehouse.walker.render.Renderer
+import org.joml.Vector2d
 import org.lwjgl.glfw.GLFW.glfwSetErrorCallback
 import org.lwjgl.glfw.GLFW.glfwTerminate
 import org.lwjgl.glfw.GLFW.glfwWindowShouldClose
 
 object Game : Tickable {
-    val player = Player(JsonLevel.load("level.json"))
+    val camera = PlayerCamera()
+    val player = Player()
+    val level = DrawableLevel(player, JsonLevel.load("level.json"))
 
     fun run() {
-        Renderer.addDrawable(DrawableLevel(player))
-        Renderer.addDrawable(player)
+        player.level = level
+
+        level.addEntity(Monster(Vector2d(player.position), level))
 
         try {
             Renderer.init()
             loop()
             Renderer.cleanup()
-        } catch (e: Exception) {
-            e.printStackTrace()
+        } catch (t: Throwable) {
+            t.printStackTrace()
+            throw t
         } finally {
             // Terminate GLFW and free the error callback
             glfwTerminate()
@@ -49,6 +56,6 @@ object Game : Tickable {
     }
 
     override fun tick() {
-        player.tick()
+        level.tick()
     }
 }

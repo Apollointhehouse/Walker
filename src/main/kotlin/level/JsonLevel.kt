@@ -1,7 +1,11 @@
 package dev.apollointhehouse.walker.level
 
 import dev.apollointhehouse.walker.entity.Entity
-import dev.apollointhehouse.walker.level.tile.LevelTile
+import dev.apollointhehouse.walker.level.tile.TilePos
+import dev.apollointhehouse.walker.level.tile.TileAir
+import dev.apollointhehouse.walker.level.tile.TilePosc
+import dev.apollointhehouse.walker.level.tile.TileType
+import dev.apollointhehouse.walker.level.tile.Tiles
 import dev.apollointhehouse.walker.serialization.JsonLevelModel
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
@@ -17,25 +21,26 @@ class JsonLevel(val model: JsonLevelModel) : Level {
     override val mapY get() = model.ySize
     override val tileSize get() = 64
 
-    override fun getRaw(col: Int, row: Int): LevelTile {
-        if (col !in 0..<mapX || row !in 0..<mapY) return LevelTile(this, Vector2i(col, row), 0)
-        return LevelTile(this, Vector2i(col, row), model.data[row * mapX + col])
+    override fun getEntities(tilePos: TilePosc): List<Entity> = entities
+    override fun getType(tilePosc: TilePosc): TileType {
+        if (tilePosc.x !in 0..<mapX || tilePosc.y !in 0..<mapY) return TileAir
+
+        return Tiles.get(model.data[tilePosc.y * mapX + tilePosc.x]) ?: TileAir
     }
 
-    override fun get(x: Int, y: Int): LevelTile {
-        val tileX = x / tileSize
-        val tileY = y / tileSize
-
-        return getRaw(tileX, tileY)
+    override fun get(x: Int, y: Int): TilePosc {
+        return TilePos(x, y)
     }
 
-    fun get(i: Int): LevelTile {
+    override fun getType(x: Int, y: Int): TileType {
+        return getType(TilePos(x, y))
+    }
+
+    fun get(i: Int): TilePos {
         val col = i % mapX
         val row = i / mapX
 
-        if (i !in 0..<size) return LevelTile(this, Vector2i(col, row), 0)
-
-        return getRaw(col, row)
+        return TilePos(Vector2i(col, row))
     }
 
     companion object {
