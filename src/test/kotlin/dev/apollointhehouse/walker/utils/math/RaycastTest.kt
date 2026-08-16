@@ -56,7 +56,7 @@ class RaycastTest {
     }
 
     @Test
-    fun testRaycastHitsOtherEntity() {
+    fun `test raycast hits other entity`() {
         val casterPos = Vector2d(60.0, 60.0)
         val targetPos = Vector2d(200.0, 60.0)
 
@@ -75,7 +75,7 @@ class RaycastTest {
     }
 
     @Test
-    fun testRaycastDoesNotHitCaster() {
+    fun `test raycast does not hit caster`() {
         val casterPos = Vector2d(60.0, 60.0)
         
         val caster = MockEntity(casterPos)

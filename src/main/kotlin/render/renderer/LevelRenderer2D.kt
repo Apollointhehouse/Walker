@@ -1,7 +1,7 @@
 package dev.apollointhehouse.walker.render.renderer
 
 import dev.apollointhehouse.walker.input.Input
-import dev.apollointhehouse.walker.level.MutableLevel
+import dev.apollointhehouse.walker.level.Level
 import dev.apollointhehouse.walker.level.tile.TileAir
 import dev.apollointhehouse.walker.level.tile.TilePos
 import dev.apollointhehouse.walker.render.Drawable
@@ -9,7 +9,7 @@ import dev.apollointhehouse.walker.render.camera.Camera
 import org.lwjgl.glfw.GLFW
 import org.lwjgl.opengl.GL11
 
-class LevelRenderer2D(private val camera: Camera, private val level: MutableLevel) : Drawable {
+class LevelRenderer2D(private val camera: Camera, private val level: Level) : Drawable {
     override fun render(deltaTime: Double) {
         if (!Input.isKeyDown(GLFW.GLFW_KEY_K)) return
 

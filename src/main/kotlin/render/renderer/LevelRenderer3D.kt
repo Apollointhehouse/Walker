@@ -1,6 +1,5 @@
 package dev.apollointhehouse.walker.render.renderer
 
-import dev.apollointhehouse.walker.Game
 import dev.apollointhehouse.walker.input.Input
 import dev.apollointhehouse.walker.level.Level
 import dev.apollointhehouse.walker.level.tile.TilePos
@@ -26,7 +25,7 @@ import kotlin.math.tan
 
 class LevelRenderer3D(private val camera: Camera, private val level: Level) : Drawable {
     override fun render(deltaTime: Double) {
-        val count = (Game.camera.fov / PRECISION).toInt()
+        val count = (camera.fov / PRECISION).toInt()
 
         for (r in 0..<count) {
             val angle = camera.getAngle(deltaTime)
@@ -49,7 +48,7 @@ class LevelRenderer3D(private val camera: Camera, private val level: Level) : Dr
             glLineWidth(1.0f)
 
             if (Input.isKeyDown(GLFW.GLFW_KEY_K)) {
-                Game.camera.apply(deltaTime) {
+                camera.apply(deltaTime) {
                     RenderUtils.drawLine(cameraPos, hitPos)
                 }
             }
