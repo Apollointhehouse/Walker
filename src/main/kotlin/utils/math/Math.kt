@@ -8,8 +8,6 @@ import org.joml.Vector2dc
 import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.sin
-import kotlin.reflect.KClass
-import kotlin.reflect.full.isSubclassOf
 
 fun lerpAngle(a: Double, b: Double, t: Double): Double {
     var delta = (b - a) % Math.TAU
@@ -22,15 +20,13 @@ fun deltaAngle(a: Double, b: Double): Double =
     (((a - b) % Math.TAU) + Math.TAU) % Math.TAU
 
 fun angleRange(angle: Double, min: Double, max: Double): Double =
-    ((max - min) / 2.0) * (cos(angle) - (-1.0)) + min
+    ((max - min) / 2.0) * (cos(angle) + 1.0) + min
 
 fun fixAngle(angle: Double): Double =
     ((angle % Math.TAU) + Math.TAU) % Math.TAU
 
-fun direction(angle: Double) = Vector2d(
-    cos(angle),
-    sin(angle)
-)
+fun direction(angle: Double) =
+    Vector2d(cos(angle), sin(angle))
 
 sealed class HitResult(val hitPos: Vector2d) {
     class TileHit(hitPos: Vector2d, val hitType: HitType) : HitResult(hitPos)
@@ -41,11 +37,8 @@ sealed interface HitType {
     object Vertical : HitType
 }
 
-inline fun <reified T : Entity> raycast(initialPos: Vector2dc, level: Level, angle: Double, depth: Int = 64): HitResult? =
-    raycast(initialPos, level, angle, T::class, depth)
-
-fun raycast(initialPos: Vector2dc, level: Level, angle: Double, ignore: KClass<out Entity>? = null, depth: Int = 64): HitResult? {
-    val grid = 64
+fun raycast(initialPos: Vector2dc, level: Level, angle: Double, depth: Int = 64): HitResult? {
+    val grid = level.tileSize
 
     val dir = direction(angle)
 
@@ -96,13 +89,18 @@ fun raycast(initialPos: Vector2dc, level: Level, angle: Double, ignore: KClass<o
             break
         }
 
+        if (initialPos.x() == (mapX*grid).toDouble() && initialPos.y() == (mapY*grid).toDouble()) {
+            continue
+        }
+
         val tilePos = level.get(mapX, mapY)
         val tileType = level.getType(tilePos)
-        val entities = level.getEntities(tilePos)
-
-        val hitEntity = entities.firstOrNull {
-            ignore == null || !it::class.isSubclassOf(ignore)
+        val hitEntity = level.getEntities(tilePos).firstOrNull { 
+            val eX = initialPos.x() - it.x
+            val eY = initialPos.y() - it.y
+            !(eX >= it.bb.minX() && eX <= it.bb.maxX() && eY >= it.bb.minY() && eY <= it.bb.maxY())
         }
+
         if (hitEntity != null) {
             return HitResult.EntityHit(Vector2d(hitEntity.x, hitEntity.y), hitEntity)
         }

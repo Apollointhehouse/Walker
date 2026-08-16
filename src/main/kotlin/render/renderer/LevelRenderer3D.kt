@@ -1,33 +1,40 @@
-package dev.apollointhehouse.walker.render
+package dev.apollointhehouse.walker.render.renderer
 
 import dev.apollointhehouse.walker.Game
-import dev.apollointhehouse.walker.entity.Player
 import dev.apollointhehouse.walker.input.Input
 import dev.apollointhehouse.walker.level.Level
 import dev.apollointhehouse.walker.level.tile.TilePos
+import dev.apollointhehouse.walker.render.Drawable
+import dev.apollointhehouse.walker.render.RenderUtils
+import dev.apollointhehouse.walker.render.Renderer
 import dev.apollointhehouse.walker.render.camera.Camera
 import dev.apollointhehouse.walker.render.texture.Textures
-import dev.apollointhehouse.walker.utils.math.*
-import dev.apollointhehouse.walker.utils.math.HitResult.*
-import dev.apollointhehouse.walker.utils.math.HitType.*
+import dev.apollointhehouse.walker.utils.math.HitResult.EntityHit
+import dev.apollointhehouse.walker.utils.math.HitResult.TileHit
+import dev.apollointhehouse.walker.utils.math.HitType.Horizontal
+import dev.apollointhehouse.walker.utils.math.HitType.Vertical
+import dev.apollointhehouse.walker.utils.math.deltaAngle
+import dev.apollointhehouse.walker.utils.math.fixAngle
+import dev.apollointhehouse.walker.utils.math.raycast
 import org.joml.minus
 import org.lwjgl.glfw.GLFW
-import org.lwjgl.opengl.GL11.*
+import org.lwjgl.opengl.GL11.glColor3d
+import org.lwjgl.opengl.GL11.glLineWidth
 import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.tan
 
-class Level3DRenderer(private val camera: Camera, private val level: Level) : Drawable {
+class LevelRenderer3D(private val camera: Camera, private val level: Level) : Drawable {
     override fun render(deltaTime: Double) {
         val count = (Game.camera.fov / PRECISION).toInt()
 
         for (r in 0..<count) {
-            val lerpAngle = camera.getAngle(deltaTime)
-            val rawAngle = lerpAngle - (r - count / 2.0 + 0.5) * Math.toRadians(PRECISION)
+            val angle = camera.getAngle(deltaTime)
+            val rawAngle = angle - (r - count / 2.0 + 0.5) * Math.toRadians(PRECISION)
             val rayAngle = fixAngle(rawAngle)
 
-            val lerpPos = camera.getPos(deltaTime)
-            val hitResult = raycast<Player>(lerpPos, level, rayAngle) ?: continue
+            val cameraPos = camera.getPos(deltaTime)
+            val hitResult = raycast(cameraPos, level, rayAngle) ?: continue
 
             val hitPos = hitResult.hitPos
 
@@ -43,17 +50,14 @@ class Level3DRenderer(private val camera: Camera, private val level: Level) : Dr
 
             if (Input.isKeyDown(GLFW.GLFW_KEY_K)) {
                 Game.camera.apply(deltaTime) {
-                    Renderer.draw(GL_LINES) {
-                        Renderer.addVertex(lerpPos)
-                        Renderer.addVertex(hitPos)
-                    }
+                    RenderUtils.drawLine(cameraPos, hitPos)
                 }
             }
 
             if (Input.isKeyDown(GLFW.GLFW_KEY_K)) continue
 
-            val deltaAngle = deltaAngle(lerpAngle, rayAngle)
-            val dist = hitResult.hitPos.distance(lerpPos) * cos(deltaAngle)
+            val deltaAngle = deltaAngle(angle, rayAngle)
+            val dist = hitResult.hitPos.distance(cameraPos) * cos(deltaAngle)
 
             var lineHeight = (level.tileSize * Renderer.windowHeight / 2.0 * 1.25) / dist
             val texYStep = 32.0 / ((level.tileSize * Renderer.windowHeight / 2.0 * 1.25) / dist)
@@ -92,9 +96,9 @@ class Level3DRenderer(private val camera: Camera, private val level: Level) : Dr
                 is EntityHit -> {
                     val entity = hitResult.entity
                     val entityPos = entity.getPos(deltaTime)
-                    val dist = lerpPos.distance(entityPos)
+                    val dist = cameraPos.distance(entityPos)
 
-                    val dir = entityPos - lerpPos
+                    val dir = entityPos - cameraPos
                     val angleToEntity = atan2(dir.x, dir.y)
 
                     val offset = dist * tan(deltaAngle(rayAngle, angleToEntity))
@@ -113,39 +117,33 @@ class Level3DRenderer(private val camera: Camera, private val level: Level) : Dr
                 is EntityHit -> 0.9
             }
 
-            Renderer.draw(GL_LINES) {
-                for (screenX in xLeft.toInt()..<xRight.toInt()) {
-                    var currentTexY = texYStart
-                    var y = 0
-                    while (y < lineHeight.toInt()) {
-                        val pixelColor =
-                            texture[texX.toInt().coerceIn(0, 31), currentTexY.toInt().coerceIn(0, 31)]
-                        val startY = y
-
-                        var countSame = 1
-                        var tempTexY = currentTexY + texYStep
-                        while (y + countSame < lineHeight.toInt() &&
-                            texture[texX.toInt().coerceIn(0, 31), tempTexY.toInt().coerceIn(0, 31)] == pixelColor
-                        ) {
-                            countSame++
-                            tempTexY += texYStep
-                        }
-
-                        when (pixelColor) {
-                            0 -> glColor3d(0.0, 0.0, 0.0)
-                            1 -> glColor3d(shade, shade, shade)
-                            2 -> glColor3d(shade, 0.0, 0.0)
-                            3 -> glColor3d(0.0, shade, 0.0)
-                            4 -> glColor3d(0.0, 0.0, shade)
-                            else -> glColor3d(0.0, 0.0, 0.0)
-                        }
-
-                        Renderer.addVertex(screenX.toDouble(), startY + lineOffset)
-                        Renderer.addVertex(screenX.toDouble(), startY + countSame + lineOffset)
-
-                        y += countSame
-                        currentTexY = tempTexY
+            for (screenX in xLeft.toInt()..<xRight.toInt()) {
+                var currentTexY = texYStart
+                var y = 0
+                while (y < lineHeight.toInt()) {
+                    val pixelColor =
+                        texture[texX.toInt().coerceIn(0, 31), currentTexY.toInt().coerceIn(0, 31)]
+                    val startY = y
+                    var countSame = 1
+                    var tempTexY = currentTexY + texYStep
+                    while (y + countSame < lineHeight.toInt() &&
+                        texture[texX.toInt().coerceIn(0, 31), tempTexY.toInt().coerceIn(0, 31)] == pixelColor
+                    ) {
+                        countSame++
+                        tempTexY += texYStep
                     }
+                    when (pixelColor) {
+                        0 -> glColor3d(0.0, 0.0, 0.0)
+                        1 -> glColor3d(shade, shade, shade)
+                        2 -> glColor3d(shade, 0.0, 0.0)
+                        3 -> glColor3d(0.0, shade, 0.0)
+                        4 -> glColor3d(0.0, 0.0, shade)
+                        else -> glColor3d(0.0, 0.0, 0.0)
+                    }
+
+                    RenderUtils.drawLine(screenX.toDouble(), startY + lineOffset, screenX.toDouble(), startY + countSame + lineOffset)
+                    y += countSame
+                    currentTexY = tempTexY
                 }
             }
         }

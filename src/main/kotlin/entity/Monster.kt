@@ -8,7 +8,7 @@ import org.joml.minus
 import kotlin.math.atan2
 import kotlin.random.Random
 
-class Monster(position: Vector2d = Vector2d(300.0, 300.0), override var level: Level) : Mob(position) {
+class Monster(position: Vector2d = Vector2d(300.0, 300.0), override var level: Level?) : Mob(position) {
 
     override val bb: AABB2d = AABB2d(Vector2d(-16.0, -16.0), Vector2d(16.0, 16.0))
 

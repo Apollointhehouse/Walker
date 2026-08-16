@@ -17,23 +17,22 @@ interface Entity : Drawable, Tickable {
     fun getVelocity(deltaTime: Double, out: Vector2d = Vector2d()) = oldVelocity.lerp(velocity, deltaTime, out)
     fun getAngle(deltaTime: Double) = lerpAngle(angleO, angle, deltaTime)
 
-    val x: Double
+    val x get() = pos.x()
+    val y get() = pos.y()
 
-    val y: Double
+    val xo get() = oldPos.x()
+    val yo get() = oldPos.y()
 
-    val xo: Double
-    val yo: Double
+    val dx get() = velocity.x()
+    val dy get() = velocity.y()
 
-    val dx: Double
-    val dy: Double
-
-    val dxo: Double
-    val dyo: Double
+    val dxo get() = oldVelocity.x()
+    val dyo get() = oldVelocity.x()
 
     val angle: Double
     val angleO: Double
 
     val bb: AABB2dc
 
-    var level: Level
+    var level: Level?
 }

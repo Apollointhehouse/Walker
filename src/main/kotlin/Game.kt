@@ -2,11 +2,12 @@ package dev.apollointhehouse.walker
 
 import dev.apollointhehouse.walker.entity.Monster
 import dev.apollointhehouse.walker.entity.Player
-import dev.apollointhehouse.walker.level.DrawableLevel
+import dev.apollointhehouse.walker.level.GameLevel
+import dev.apollointhehouse.walker.render.renderer.LevelRenderer2D
 import dev.apollointhehouse.walker.level.JsonLevel
 import dev.apollointhehouse.walker.render.camera.PlayerCamera
 import dev.apollointhehouse.walker.render.Renderer
-import dev.apollointhehouse.walker.render.Level3DRenderer
+import dev.apollointhehouse.walker.render.renderer.LevelRenderer3D
 import org.joml.Vector2d
 import org.lwjgl.glfw.GLFW.glfwSetErrorCallback
 import org.lwjgl.glfw.GLFW.glfwTerminate
@@ -15,11 +16,13 @@ import org.lwjgl.glfw.GLFW.glfwWindowShouldClose
 object Game : Tickable {
     val player = Player()
     val camera = PlayerCamera(player)
-    val level = DrawableLevel(player, JsonLevel.load("level.json"))
+    val level = GameLevel(JsonLevel.load("level.json"))
 
     fun run() {
-        Renderer.addDrawable(Level3DRenderer(camera, level))
+        Renderer.addDrawable(LevelRenderer2D(camera, level))
+        Renderer.addDrawable(LevelRenderer3D(camera, level))
 
+        level.addEntity(player)
         level.addEntity(Monster(Vector2d(player.pos), level))
 
         try {

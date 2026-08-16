@@ -9,10 +9,10 @@ class PlayerCamera(private val player: Player) : Camera {
     override val fov: Double = 80.0
 
     override fun apply(deltaTime: Double, block: () -> Unit) {
-        val lerpPos = getPos(deltaTime)
+        val pos = getPos(deltaTime)
 
         glPushMatrix()
-        glTranslated(Renderer.windowWidth / 2.0 - lerpPos.x(), Renderer.windowHeight / 2.0 - lerpPos.y(), 0.0)
+        glTranslated(Renderer.windowWidth / 2.0 - pos.x(), Renderer.windowHeight / 2.0 - pos.y(), 0.0)
 
         try {
             block()

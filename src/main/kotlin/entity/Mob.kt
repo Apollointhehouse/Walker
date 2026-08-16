@@ -20,7 +20,7 @@ abstract class Mob(
     override val velocity = Vector2d()
     override val oldVelocity = Vector2d(velocity)
 
-    override lateinit var level: Level
+    override var level: Level? = null
 
     abstract override val bb: AABB2dc
 
@@ -85,6 +85,8 @@ abstract class Mob(
     }
 
     protected fun canMoveTo(testX: Double, testY: Double, testBB: AABB2d): Boolean {
+        val level = level ?: return false
+
         val mapWidth = level.mapX * level.tileSize
         val mapHeight = level.mapY * level.tileSize
 
@@ -121,12 +123,9 @@ abstract class Mob(
     protected fun renderDebugBB(deltaTime: Double, color: Triple<Float, Float, Float>) {
         if (!Input.isKeyDown(GLFW.GLFW_KEY_K)) return
 
-        val lerpPos = getPos(deltaTime)
-
         Game.camera.apply(deltaTime) {
             org.lwjgl.opengl.GL11.glColor3f(color.first, color.second, color.third)
-            val adjBB = bb + lerpPos
-            RenderUtils.drawBB(adjBB)
+            RenderUtils.drawBB(bb + getPos(deltaTime))
         }
     }
 
@@ -135,6 +134,7 @@ abstract class Mob(
         rayCount: Int,
         depth: Int = 64
     ): List<Pair<Entity, Double>> {
+        val level = level ?: return emptyList()
         if (rayCount <= 0) return emptyList()
 
         val hits = mutableListOf<Pair<Entity, Double>>()
@@ -143,7 +143,7 @@ abstract class Mob(
             val t = if (rayCount == 1) 0.5 else r.toDouble() / (rayCount - 1)
             val rayAngle = fixAngle(angle - fov / 2.0 + fov * t)
 
-            val hit = raycast<Player>(pos, level, rayAngle, depth = depth)
+            val hit = raycast(pos, level, rayAngle, depth = depth)
             if (hit is HitResult.EntityHit) {
                 hits.add(hit.entity to hit.hitPos.distance(pos))
             }
